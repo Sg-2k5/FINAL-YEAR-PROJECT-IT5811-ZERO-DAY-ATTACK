@@ -1,0 +1,74 @@
+\chapter{Literature Survey}
+\label{ch:literature-survey}
+
+\section{Overview}
+Zero-day detection requires identifying previously unseen attacks without relying
+on signature databases. Recent research emphasizes learning normal behavior from
+structure-rich data and detecting deviations using self-supervised objectives. The
+papers chosen for this project align with three pillars: (i) self-supervised graph
+representation learning for intrusion detection, (ii) zero-day detection using
+machine learning without prior attack labels, and (iii) continual learning and
+alert correlation to make the system practical over time. This survey correlates
+each paper directly with the modules implemented in the project.
+
+\section{Self-Supervised Graph Learning for Intrusion Detection}
+Guerra et al. present a self-supervised method for learning graph representations
+for intrusion detection, demonstrating that graph structure alone can provide
+strong anomaly signals without labeled attacks \cite{guerra2025graphids}. This
+directly motivates the use of graph autoencoders in our system, where behavioral
+graphs are reconstructed and high reconstruction error indicates an anomaly.
+
+Hayat et al. study self-supervised time-aware heterogeneous hypergraph learning
+for dynamic graph-level classification \cite{hayat2025self}. Their work supports
+two key design choices in our project: (i) representing heterogeneous entities
+(process, file, socket) and (ii) capturing time-evolving behavior via windows of
+events. Our graph construction module follows this insight by building time-window
+behavior graphs and preserving type-specific interactions.
+
+\section{Zero-Day Detection Using Machine Learning}
+Dai et al. propose a zero-day intrusion detection model for unseen data using
+machine learning \cite{dai2025zero}. This work reinforces the need for detection
+without prior attack labels, aligning with our self-supervised training strategy.
+In our pipeline, the model is trained only on benign behavior, and anomalies are
+detected as deviations in reconstruction error rather than signature matches.
+
+\section{Alert Correlation and Practical Detection Pipelines}
+Lanigan et al. focus on alert correlation for intelligent threat detection and
+response \cite{lanigan2025alert}. Their study highlights that detection systems
+must produce interpretable, correlatable alerts rather than isolated anomaly
+scores. This informs our alerting and logging module, where each anomaly score is
+converted into structured alerts with severity for downstream correlation.
+
+\section{Continual Learning and Model Adaptation}
+Continual learning is critical because normal behavior shifts over time. Guo et
+al. present continual learning strategies for intrusion detection under evolving
+threats \cite{guo2025continual}, while Prasath et al. analyze multiple continual
+learning models in IDS settings \cite{prasath2025analysis}. Lin et al. further
+emphasize dynamic model updates driven by cyber threat intelligence \cite{lin2025evolving}.
+Together, these works justify the project's modular architecture and the planned
+future extension where the model can be updated with new normal behavior without
+forgetting prior patterns.
+
+\section{Module-to-Literature Mapping}
+Based on the above studies, each module in the project is grounded in recent
+research:
+\begin{itemize}
+    \item Graph autoencoder learning and reconstruction-based detection are
+    supported by self-supervised graph IDS research \cite{guerra2025graphids}.
+    \item Heterogeneous, time-windowed graph construction aligns with time-aware
+    dynamic graph learning \cite{hayat2025self}.
+    \item Zero-day, label-free detection motivation is reinforced by recent
+    machine-learning-based IDS work \cite{dai2025zero}.
+    \item Alert structuring and interpretability are informed by alert
+    correlation research \cite{lanigan2025alert}.
+    \item Long-term adaptability and model updates are grounded in continual
+    learning IDS studies \cite{guo2025continual,prasath2025analysis,lin2025evolving}.
+\end{itemize}
+
+\section{Summary}
+The selected literature provides a coherent foundation for the proposed system.
+Self-supervised graph learning enables anomaly detection without labels, dynamic
+graph modeling supports heterogeneous behavioral data, and continual learning
+ensures long-term adaptability. By aligning each system module with the cited
+studies, the project follows current research directions while addressing the
+practical requirements of zero-day intrusion detection.

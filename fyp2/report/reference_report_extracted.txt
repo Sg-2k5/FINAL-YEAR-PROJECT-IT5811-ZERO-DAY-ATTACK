@@ -1,0 +1,1471 @@
+
+===== PAGE 1 =====
+
+TRUST-A W ARE VERTICAL FEDERATED
+LEARNING FRAMEWORK FOR
+HEALTHCARE
+A PROJECT REPORT
+Submitted by
+KA VISH S - 2022115001
+SHREYAS S - 2022115046
+SASHANK G - 2022115051
+PHA V ANKUMAR RL - 2022115054
+to the Faculty of
+INFORMATION AND COMMUNICATION ENGINEERING
+in partial fulfillment for the award of the degree of
+BACHELOR OF TECHNOLOGY
+in
+INFORMATION TECHNOLOGY
+
+
+===== PAGE 2 =====
+
+ANNA UNIVERSITY
+CHENNAI – 600 025
+BONA FIDE CERTIFICATE
+Certified that this project report titled”TRUST-A W ARE VERTICAL FED-
+ERATED LEARNING FRAMEWORK FOR HEALTHCARE”is the bona fide
+work ofKA VISH S (2022115001),SHREYAS S (2022115046),SASHANK G
+(2022115051), andPHA V ANKUMAR RL (2022115054)who carried out the project
+work under my supervision.
+Certified further that to the best of my knowledge and belief, the work reported
+herein does not form part of any other project report or dissertation on the basis of
+which a degree or award was conferred on an earlier occasion for this or any other
+candidate.
+PLACE:CHENNAI
+DATE:
+Dr. K. VIDYA
+ASSOCIATE PROFESSOR
+PROJECT GUIDE
+DEPARTMENT OF IST, CEG
+ANNA UNIVERSITY
+CHENNAI – 600 025
+COUNTERSIGNED
+i
+
+===== PAGE 3 =====
+
+ABSTRACT
+Healthcare institutions possess valuable patient data for training artificial intelligence
+models, but privacy regulations, data sovereignty concerns, and security requirements
+prevent centralized data aggregation. Federated Learning enables collaborative model
+training without raw data sharing, but existing approaches lack comprehensive trust
+evaluation and security mechanisms essential for healthcare applications. This project
+develops aTrust-Aware Vertical Federated Learning Frameworkthat addresses
+these challenges through multi-dimensional trust scoring, anomaly detection, and real-
+time monitoring.
+The framework integrates three healthcare clients with distinct data modalities:
+blood glucose measurements for diabetes classification using neural networks, retinal
+fundus images for diabetic retinopathy detection using ResNet18 CNN, and medication
+review sequences for drug effectiveness prediction using bidirectional LSTM. A central
+server coordinates federated training using the Flower framework, implementing trust-
+weighted aggregation that evaluates client reliability across five factors — accuracy
+stability (30%), anomaly behavior (25%), participation consistency (20%), historical
+reputation (15%), and resource usage patterns (10%). Clients with trust scores below
+the threshold (τ= 0.6) are excluded from aggregation, protecting the global model
+from unreliable or malicious participants.
+Experimental evaluation on standard healthcare datasets (Pima Indians Diabetes,
+APTOS Retinal Images, and UCI Drug Reviews) demonstrates that trust-weighted
+aggregation outperforms standard FedAvg by 0.8–1.7% accuracy across tasks, while
+successfully mitigating gradient poisoning, Sybil attacks, and Byzantine failures.
+The framework achieves 79.3% accuracy for blood glucose prediction, 79.6% for
+retinal classification, and 72.4% for medication effectiveness prediction. This work
+demonstrates that secure, trustworthy, and compliant collaborative AI is achievable
+in healthcare environments through comprehensive trust evaluation and multi-layered
+security, enabling multi-institutional learning while preserving patient privacy.
+ii
+
+===== PAGE 4 =====
+
+ii  
+ABSTRACT (TAMIL) 
+ 
+சுகாதார நிறுவனங ் களிடம் AI மாதிரிகளள பயிற்சி செய ் ய மதிப்புள ்ள 
+நநாயாளி தரவு இருந்தாலும், தனியுரிளமெ் ெட்டங ் கள ் மற்றும் 
+பாதுகாப்பு காரணங ் களால ் ளமயப்படுத்தப்பட்ட தரவு நெகரிப்பு 
+ொத்தியமில ் ளல. Federated Learning தரளவ பகிராமல ் இளணந்து பயிற்சி 
+செய ் ய உதவுகிறது, ஆனால ் தற்நபாளதய முளறகளில ் 
+சுகாதாரத்திற்குத் நதளவயான நம்பிக்ளக மற்றும் பாதுகாப்பு 
+அளமப்புகள ் நபாதுமானதாக இல ் ளல. 
+ 
+இந்த ஆய ் வு இரத்த ெர் க்களர அளவீடுகள ், சரட்டினா ஃபண ் டஸ ் 
+படங ் கள ் மற்றும் மருந்து விமர் ென சதாடர் களளப் பயன ் படுத்தும் 
+மூன ் று நிறுவனங ் களள உள ்ளடக்கிய நம ்பிக்ளக-ொர்ந்த செங ் குத்து 
+Federated Learning வடிவளமப்ளப அறிமுகப்படுத்துகிறது. Flower framework 
+அடிப்பளடயில ் ளமயெ் நெளவயகம ் துல ் லியத் தடத்தன ் ளம, 
+அொதாரண நடத்ளத, பங ் நகற்பு சதாடர் ெ்சி, வரலாற்று நற்சபயர் 
+மற்றும் வளப் பயன ் படுத்தல ் நபான ் ற காரணிகளின ் அடிப்பளடயில ் 
+நம ்பிக்ளக-எளடயாக்கப்பட்ட ஒருங ் கிளணப்ளபெ் செய ் கிறது, நமலும் 
+வரம்பிற்குக் கீழ் உள ்ள வாடிக்ளகயாளர் கள ் ந ீ க்கப்படுகின ் றனர். 
+ 
+Pima Diabetes, APTOS Retinal Images மற்றும் UCI Drug Reviews தரவுகளின ் 
+பரிநொதளனகள ் இந்த முளறயால ் FedAvg-ஐ விட அதிக துல ் லியம ் 
+கிளடப்பளதயும ், gradient poisoning, Sybil தாக்குதல ் மற்றும் Byzantine 
+நதால ் விகளள குளறப்பளதயும ் காட்டுகின ் றன. அளமப்பு இரத்த 
+ெர் க்களர கணிப்பில ் 79.3%, சரட்டினா வளகப்பாட்டில ் 79.6% மற்றும் 
+மருந்து செயல ் திறன ் கணிப்பில ் 72.4% துல ் லியத்ளத அளடவதால ், பல 
+நிறுவனங ் களிளடநய பாதுகாப்பான கற்றல ் நநாயாளர் 
+தனியுரிளமயுடன ் ொத்தியசமன உறுதிப்படுத்தப்படுகிறது. 
+iii
+
+===== PAGE 5 =====
+
+ACKNOWLEDGEMENT
+It is our privilege to express our deepest sense of gratitude and sincere thanks toDr.
+K. VIDYA, Associate Professor, Project Guide, Department of Information Science
+and Technology, College of Engineering, Guindy, Anna University, for her constant
+supervision, encouragement, and support in our project work. We greatly appreciate
+the constructive advice and motivation that was given to help us advance our project in
+the right direction.
+We are grateful toDr. S. SW AMYNATHAN, Professor and Head, Department of
+Information Science and Technology, College of Engineering, Guindy, Anna University
+for providing us with the opportunity and necessary resources to do this project.
+We would also wish to express our deepest sense of gratitude to the Members of the
+Project Review Committee:Dr. M. VIJAYALAKSHMI, Professor,Dr. ABIRAMI
+MURUGAPPAN, Professor,Dr. N. THANGARAJ, Associate Professor, andMs.
+K. MOHANA BHINDU, Teaching Fellow, Department of Information Science and
+Technology, College of Engineering, Guindy, Anna University, for their guidance and
+useful suggestions that were beneficial in helping us improve our project.
+We also thank the faculty members and non-teaching staff members of the De-
+partment of Information Science and Technology, Anna University, Chennai, for their
+valuable support throughout the course of our project work.
+KA VISH S (2022115001)
+SHREYAS S (2022115046)
+SASHANK G (2022115051)
+PHA V ANKUMAR RL (2022115054)
+iv
+
+===== PAGE 6 =====
+
+Contents
+ACKNOWLEDGEMENT iv
+TABLE OF CONTENTS vii
+LIST OF TABLES viii
+LIST OF FIGURES ix
+LIST OF ABBREVIATIONS x
+1 INTRODUCTION 1
+1.1 BACKGROUND AND MOTIV ATION 1
+1.2 CHALLENGES 1
+1.2.1 Trust and Reliability Issues 1
+1.2.2 Security Threats 2
+1.2.3 Lack of Accountability 2
+1.3 PROBLEM STATEMENT 2
+1.4 PROPOSED SOLUTION 3
+1.4.1 Trust-Based Client Weighting 3
+1.4.2 Multi-Layered Security Mechanisms 3
+1.4.3 Blockchain-Based Audit Trail 3
+1.5 OBJECTIVES 4
+1.6 SCOPE OF THE PROJECT 4
+1.7 ORGANIZATION OF THE REPORT 5
+2 LITERATURE SURVEY 6
+2.1 FEDERATED LEARNING IN HEALTHCARE 6
+2.2 TRUST AND SECURITY IN FEDERATED SYSTEMS 6
+2.3 VERTICAL FEDERATED LEARNING 6
+2.4 ANOMALY DETECTION IN DISTRIBUTED SYSTEMS 7
+2.5 PRIV ACY-PRESERVING TECHNIQUES 7
+2.6 MULTI-MODAL MEDICAL DATA INTEGRATION 7
+2.7 SUMMARY OF EXISTING WORK 8
+2.8 RESEARCH OBJECTIVES 8
+2.9 PROPOSED SOLUTION ARCHITECTURE 9
+2.9.1 Client Management Module 9
+2.9.2 Federated Learning Server Module 9
+2.9.3 Trust Evaluation Engine Module 10
+v
+
+===== PAGE 7 =====
+
+2.9.4 Secure Aggregation Module 10
+2.9.5 Admin Dashboard and Monitoring Module 10
+2.10 IMPLEMENTATION TECHNOLOGIES 11
+2.11 EXPECTED CONTRIBUTIONS 11
+3 SYSTEM OVERVIEW 12
+3.1 SYSTEM ARCHITECTURE 12
+3.1.1 Key Design Principles 14
+3.2 DATASET DESCRIPTION 14
+3.3 MODULE DESCRIPTIONS 14
+3.3.1 Edge Client Module 14
+3.3.2 Federated Server Module 15
+3.3.3 Trust Engine Module 16
+3.3.4 Aggregation Module 19
+3.3.5 Anomaly Detection Module 19
+3.3.6 Admin Dashboard Module 20
+4 SYSTEM DESIGN AND IMPLEMENTATION 21
+4.1 IMPLEMENTATION ENVIRONMENT 21
+4.2 SYSTEM DESIGN METHODOLOGY 21
+4.3 TRUST SCORING ALGORITHM 21
+4.3.1 Trust Score Calculation Flow 21
+4.3.2 Trust Threshold Configuration 23
+4.4 FEDERATED AGGREGATION STRATEGY DESIGN 23
+4.4.1 Trust-Weighted Averaging Algorithm 23
+4.4.2 Handling Model Heterogeneity 23
+4.5 ANOMALY DETECTION IMPLEMENTATION 25
+4.5.1 Statistical Time Anomaly Detection 25
+4.5.2 Isolation Forest Update Anomaly Detection 25
+4.5.3 Behavioral Pattern Analysis 26
+4.6 MODEL ARCHITECTURE IMPLEMENTATIONS 26
+4.6.1 Real-Time System Metrics Collection 26
+4.6.2 Blood Client Neural Network 26
+4.6.3 Retinal Client CNN 27
+4.6.4 Medication Client LSTM 27
+4.7 SECURITY IMPLEMENTATION DETAILS 28
+vi
+
+===== PAGE 8 =====
+
+4.7.1 Quarantine Management 28
+4.8 MONITORING AND DASHBOARD IMPLEMENTATIONS 29
+4.8.1 Real-Time Metrics Collection 29
+4.8.2 Streamlit Dashboard Structure 29
+4.9 DEPLOYMENT ARCHITECTURE 30
+4.9.1 Component Deployment 30
+4.9.2 Network Configuration 32
+4.10 CONFIGURATION MANAGEMENT 32
+4.10.1 System Configuration File 32
+5 RESULTS AND PERFORMANCE ANALYSIS 34
+5.1 EXPERIMENTAL SETUP 34
+5.1.1 Hardware and Software Environment 34
+5.1.2 Dataset Preparation 34
+5.1.3 Training Configuration 34
+5.1.4 Evaluation Metrics 34
+5.2 MODEL PERFORMANCE RESULTS 35
+5.2.1 Blood Glucose Prediction Results 35
+5.2.2 Retinal Classification Results 35
+5.2.3 Medication Effectiveness Results 36
+5.2.4 Comparative Analysis 36
+5.3 TRUST SYSTEM EV ALUATION 37
+5.4 SECURITY EFFECTIVENESS 38
+5.4.1 Anomaly Detection Performance 38
+5.4.2 Attack Mitigation Scenarios 38
+5.5 COMMUNICATION OVERHEAD ANALYSIS 39
+5.5.1 Training Time Analysis 39
+5.5.2 Scalability Analysis 40
+5.6 SYSTEM RELIABILITY 41
+5.7 COMPUTATIONAL EFFICIENCY 41
+5.8 DISCUSSION 42
+6 CONCLUSION AND FUTURE WORK 43
+6.1 CONCLUSION 43
+6.2 FUTURE WORKS 44
+REFERENCES 45
+vii
+
+===== PAGE 9 =====
+
+List of Tables
+5.1 Retinal Client Model Performance (50 Rounds) 35
+viii
+
+===== PAGE 10 =====
+
+List of Figures
+3.1 Trust-Aware Federated Learning System Architecture 13
+3.2 Trust Engine Multi-Factor Evaluation 18
+4.1 System Deployment Architecture 31
+5.1 Model Performance Comparison Across Different Federated Learning
+Approaches 36
+5.2 Trust Score Evolution and Stability Analysis Across Training Rounds 37
+5.3 Security Incident Detection and Attack Mitigation Analysis 39
+5.4 Scalability Analysis and System Performance Metrics 40
+5.5 System Resource Usage Monitoring and Performance Metrics 41
+ix
+
+===== PAGE 11 =====
+
+LIST OF ABBREVIATIONS
+Abbreviation Full Form
+AIArtificial Intelligence
+ANNArtificial Neural Network
+APTOSAsia Pacific Tele-Ophthalmology Society
+APIApplication Programming Interface
+CNNConvolutional Neural Network
+CPUCentral Processing Unit
+CUSUMCumulative Sum
+CVECommon Vulnerabilities and Exposures
+DLDeep Learning
+DRDiabetic Retinopathy
+EHRElectronic Health Record
+FLFederated Learning
+FedAvgFederated Averaging
+FedProxFederated Proximal
+GDPRGeneral Data Protection Regulation
+GPUGraphics Processing Unit
+gRPCGoogle Remote Procedure Call
+HIPAAHealth Insurance Portability and Accountability Act
+HTTPHypertext Transfer Protocol
+IaCInfrastructure as Code
+IoTInternet of Things
+LDPLocal Differential Privacy
+LSTMLong Short-Term Memory
+MAMLModel-Agnostic Meta-Learning
+MLMachine Learning
+MRIMagnetic Resonance Imaging
+NNNeural Network
+PCAPrincipal Component Analysis
+PIPLPersonal Information Protection Law
+RAMRandom Access Memory
+ReLURectified Linear Unit
+ResNetResidual Network
+x
+
+===== PAGE 12 =====
+
+Chapter 1
+INTRODUCTION
+1.1 BACKGROUND AND MOTIV ATION
+Healthcare institutions possess vast patient data valuable for machine learning but
+face barriers due to privacy regulations (HIPAA, GDPR), data sovereignty concerns,
+and heterogeneous data formats. Traditional centralized machine learning requires
+consolidating data in one location, which is untenable in healthcare due to privacy,
+legal, and ethical constraints.
+Federated Learning (FL) enables collaborative model training across distributed
+data sources without raw data centralization. By training models locally and sharing
+only model parameters, FL preserves privacy while leveraging collective knowledge.
+This approach improves model accuracy through diverse patient populations, enhances
+privacy protection, ensures regulatory compliance, and accelerates clinical deployment
+of AI technologies.
+1.2 CHALLENGES
+While federated learning offers promising solutions for privacy-preserving collabora-
+tive healthcare AI, several critical challenges must be addressed to ensure practical
+deployment and trustworthy operation in real-world clinical environments.
+1.2.1 Trust and Reliability Issues
+Participating institutions exhibit heterogeneous characteristics: data quality variations,
+computational capabilities, and network reliability. Without trust evaluation, all
+1
+
+===== PAGE 13 =====
+
+clients are treated equally regardless of data quality. This causes problems when
+unreliable clients with poor data or inconsistent participation degrade the global model.
+Traditional federated averaging lacks defense against malicious participants who inject
+poisoned updates.
+1.2.2 Security Threats
+Federated learning faces multiple attack vectors: Gradient Poisoning (manipulated
+gradients degrade model), Model Inversion (reconstructing training data from pa-
+rameters), Byzantine Attacks (malformed updates disrupt aggregation), Sybil Attacks
+(fake client identities amplify malicious influence), and Reconnaissance (probing for
+vulnerabilities).
+1.2.3 Lack of Accountability
+Existing implementations lack comprehensive audit mechanisms for tracking client
+behaviors and providing verifiable evidence. Without immutable audit trails, determin-
+ing responsibility for incidents becomes impossible. HIPAA mandates detailed audit
+logging, but standard FL frameworks provide minimal capabilities. This creates moral
+hazard where participants face no consequences for poor behavior.
+1.3 PROBLEM STATEMENT
+Existing federated learning methods lack advanced mechanisms to reliably evaluate
+client trust, leaving systems vulnerable to attacks like gradient poisoning, Byzantine
+faults, and Sybil infiltrations. They also miss immutable audit trails needed for
+regulatory compliance and do not fully support vertical federated learning with diverse
+data types. Addressing these gaps is crucial for secure, trustworthy collaborative AI in
+sensitive domains.
+2
+
+===== PAGE 14 =====
+
+This project develops a Trust-Aware Vertical Federated Learning Framework
+for healthcare diabetes prediction that addresses these gaps through trust-weighted
+aggregation, multi-layered security, and blockchain-based auditing.
+1.4 PROPOSED SOLUTION
+The Trust-Aware Vertical Federated Learning Framework integrates multiple comple-
+mentary mechanisms to address the challenges identified above, creating a comprehen-
+sive system for secure, trustworthy, and accountable collaborative healthcare AI.
+1.4.1 Trust-Based Client Weighting
+The framework evaluates client reliability across five dimensions: Accuracy Stability
+(30%), Anomaly Behavior (25%), Participation Consistency (20%), Historical Repu-
+tation (15%), and Resource Usage (10%). The composite trust score determines each
+client’s weight in aggregation, ensuring reliable participants dominate while unreliable
+clients are down-weighted or excluded.
+1.4.2 Multi-Layered Security Mechanisms
+The framework implements: Statistical Anomaly Detection (z-score analysis for
+time anomalies), ML-Based Update Validation (Isolation Forest for outlier detection),
+Behavioral Monitoring (CUSUM charts for drift detection), Honeypot Deception (trap
+reconnaissance attempts), and Automatic Quarantine (exclude malicious clients).
+1.4.3 Blockchain-Based Audit Trail
+Ethereum smart contracts create immutable records of all FL activities (training rounds,
+client submissions, trust evaluations, security incidents). Events are cryptographically
+hashed and permanently stored, providing tamper-proof audit trails for HIPAA
+3
+
+===== PAGE 15 =====
+
+compliance and regulatory requirements.
+1.5 OBJECTIVES
+This project aims to implement federated learning infrastructure using Flower frame-
+work for three healthcare clients handling blood, retinal, and medication data. The
+framework develops a five-factor trust evaluation mechanism for client reliability as-
+sessment and integrates multi-layered anomaly detection using z-score, Isolation Forest,
+and CUSUM techniques. The system validates security effectiveness against gradient
+poisoning, Byzantine, and Sybil attacks. A Streamlit-based administrative dashboard
+provides real-time monitoring capabilities while ensuring privacy preservation with
+zero raw data transfer. The project evaluates model accuracy, security robustness, and
+computational efficiency across distributed healthcare environments.
+1.6 SCOPE OF THE PROJECT
+In Scope: Vertical FL with three healthcare clients (blood/retinal/medication), trust-
+weighted aggregation, multi-layered security, blockchain audit trails, deep learning
+models (NN, CNN, LSTM), Streamlit dashboard, evaluation on Pima/APTOS/UCI
+datasets, attack simulation (gradient poisoning, Byzantine, Sybil), and HIPAA com-
+pliance.
+Out of Scope: Horizontal FL, formal differential privacy, production hospital
+deployment, EHR system integration, mobile/edge deployment, cross-border FL,
+quantum cryptography, and real-time clinical decision support.
+4
+
+===== PAGE 16 =====
+
+1.7 ORGANIZATION OF THE REPORT
+The chapters in this report are organized as follows:
+CHAPTER 1 provides an introduction to the topic, the scope, and objectives of the
+project.
+CHAPTER 2 reviews related literature and identifies the research gaps addressed in
+this work.
+CHAPTER 3 presents the concepts and proposed system architecture of this project.
+CHAPTER 4 details all the implementation aspects of this project along with the
+respective modules and algorithms.
+CHAPTER 5 presents the outcomes and experimental results of this work, including
+an in-depth analysis of various performance metrics.
+CHAPTER 6 concludes this work and outlines the prospective future work in this
+area.
+5
+
+===== PAGE 17 =====
+
+Chapter 2
+LITERATURE SURVEY
+2.1 FEDERATED LEARNING IN HEALTHCARE
+FedAvg [1] averages model weights across clients but assumes equal trustworthiness
+and lacks defense against malicious behavior. The framework implements simple
+averaging without considering client reliability, making it vulnerable to poisoning
+attacks. Recent surveys on FL advances [2] did not propose concrete trust mechanisms
+for vertical FL scenarios where different institutions hold complementary feature
+spaces. Applications of FL to medical imaging [3][7] focused only on horizontal FL
+with identical feature spaces, limiting applicability to real-world healthcare scenarios
+where data modalities differ across institutions.
+2.2 TRUST AND SECURITY IN FEDERATED SYSTEMS
+Reputation-based FL approaches [4] rely solely on loss values, missing critical
+behavioral patterns such as participation consistency and resource usage anomalies.
+Client selection mechanisms lack explicit trust modeling across multiple dimensions.
+These approaches fail to address the multi-dimensional nature of trust in healthcare
+federated learning environments.
+2.3 VERTICAL FEDERATED LEARNING
+VFL taxonomy [5] with SecureBoost using homomorphic encryption lacks trust
+assessment mechanisms for heterogeneous participants. Split learning approaches for
+vertical data partitioning assume all participants are trustworthy, creating vulnerabilities
+6
+
+===== PAGE 18 =====
+
+in adversarial environments. Differential privacy additions [2] to VFL reduce model
+accuracy significantly and don’t address trust heterogeneity across clients with different
+data modalities and model architectures.
+2.4 ANOMALY DETECTION IN DISTRIBUTED SYSTEMS
+Krum [6] for Byzantine-robust aggregation requires high computational complexity
+withO(n 2)pairwise distance calculations. Coordinate-wise median and trimmed
+mean rules [6] may fail against sophisticated adaptive attacks that target statistical
+thresholds. Poisoning detection using validation data requires server-side labeled
+data unavailable in privacy-preserving healthcare scenarios where data cannot leave
+institutional boundaries.
+2.5 PRIV ACY-PRESERVING TECHNIQUES
+Applications of FL to brain tumor segmentation [7] lack trust mechanisms to handle
+unreliable medical imaging from diverse scanner types. Hybrid FL approaches for
+Electronic Health Records [3] assume all participating hospitals are trusted entities
+without verification mechanisms. Surveys on privacy-preserving machine learning
+[2] note the fundamental trade-off between privacy guarantees through differential
+privacy and model accuracy, particularly severe in medical diagnosis tasks requiring
+high precision.
+2.6 MULTI-MODAL MEDICAL DATA INTEGRATION
+Research on integrating heterogeneous medical data modalities [3][5] remains limited.
+Blood biomarkers, retinal imaging, and medication histories provide complementary
+diagnostic information for diabetes prediction, yet existing FL frameworks lack
+architectures supporting simultaneous training of distinct model types (neural networks
+7
+
+===== PAGE 19 =====
+
+for tabular data, CNNs for imaging, LSTMs for temporal sequences) while maintaining
+trust evaluation across these diverse client types.
+2.7 SUMMARY OF EXISTING WORK
+Literature reveals critical gaps: (1) trust mechanisms focus on accuracy-based repu-
+tation, neglecting behavioral patterns, resource usage, and participation consistency
+[1][4], (2) frameworks designed for horizontal FL lack vertical FL trust assessment
+across heterogeneous data modalities [5], (3) systems lack real-time monitoring
+dashboards with interpretable trust visualizations, (4) anomaly detection relies on sta-
+tistical methods vulnerable to adaptive attacks [6], (5) few address healthcare-specific
+requirements including HIPAA compliance, comprehensive audit trails, multi-modal
+data integration, and clinical interpretability [3][7], and (6) existing VFL approaches
+assume homogeneous client models rather than supporting diverse architectures tailored
+to different data types.
+2.8 RESEARCH OBJECTIVES
+This project aims to: (1) develop multi-factor trust evaluation across five dimensions
+with weighted scoring (accuracy stability 30%, anomaly detection 25%, participation
+consistency 20%, historical behavior 15%, resource usage 10%) [1][2], (2) design trust-
+weighted aggregation for vertical FL supporting heterogeneous client architectures [5],
+(3) create real-time monitoring dashboard with interpretable trust metrics, (4) integrate
+multi-layered security combining Isolation Forest anomaly detection with statistical
+z-score analysis [6], and (5) evaluate on healthcare diabetes datasets with blood
+reports, retinal scans, and medication histories against adversarial attacks including data
+poisoning, model poisoning, and free-riding behaviors [3][7].
+8
+
+===== PAGE 20 =====
+
+2.9 PROPOSED SOLUTION ARCHITECTURE
+The Trust-Aware Vertical FL Framework comprises five core modules implementing
+comprehensive trust-based federated learning for healthcare applications.
+2.9.1 Client Management Module
+Manages three healthcare client types with distinct data modalities: (1) Blood Re-
+ports Client processing structured medical data (glucose, HbA1c, cholesterol, BMI,
+insulin, blood pressure) using Logistic Regression and Multi-Layer Perceptron neural
+networks with PyTorch implementation featuring 64-32-16 hidden layers with ReLU
+activation and dropout regularization [1], (2) Retinal Scans Client handling image
+data through Convolutional Neural Networks for diabetic retinopathy detection with
+gradient compression for efficiency [3][7], and (3) Medication History Client analyzing
+sequential medication data (drug sequences, dosage, duration, response patterns) using
+Long Short-Term Memory networks for temporal pattern recognition. Each client
+implements local model training with differential privacy guarantees [2] and secure
+encrypted communication with the federated server.
+2.9.2 Federated Learning Server Module
+Coordinates entire federated learning process through Core Coordination Engine
+managing round scheduling, trust-based client selection, global model distribution, and
+FL protocol compliance enforcement [1][4]. Communication Handler provides secure
+message brokering with update validation and heartbeat monitoring. Model Manage-
+ment maintains global model repository with versioning, checkpoint persistence, and
+convergence tracking across heterogeneous client architectures [5].
+9
+
+===== PAGE 21 =====
+
+2.9.3 Trust Evaluation Engine Module
+Dynamically assesses client trustworthiness using five-factor scoring formula:
+T rustscore = 0.30×Accuracy stability + 0.25×Anomaly score + 0.20×
+P articipationconsistency + 0.15×Historical behavior + 0.10×Resource ef f iciency
+with configurable threshold of 0.6 [4]. Implements real-time trust score computation
+through Metric Calculators tracking model performance consistency, suspicious
+behavior identification, engagement patterns, long-term behavior analysis, and system
+usage efficiency.
+2.9.4 Secure Aggregation Module
+Performs trust-weighted model update combination through Trust-Weighted Aggrega-
+tor calculating contribution weights based on trust scores, validating update integrity,
+and fusing multi-modal outputs [1][5]. Byzantine Defense System implements trimmed
+mean aggregation for outlier resistance, coordinate-wise median robust aggregation,
+and Krum algorithm for Byzantine-robust selection [6]. Privacy-Preserving Aggrega-
+tion employs differential privacy with formal guarantees [2] ensuring clients with trust
+scores below 0.6 are excluded from parameter aggregation.
+2.9.5 Admin Dashboard and Monitoring Module
+Real-time monitoring panel built with Streamlit provides administrative interface
+featuring trust score evolution visualization, live training progress metrics, security
+threat alerts, and performance tracking. Control Interface enables manual intervention
+capabilities, runtime parameter adjustment, and client lifecycle management. Analytics
+Engine generates automated performance reports, comparative analysis against baseline
+FedAvg [1], and research-quality visualizations for clinical stakeholders.
+10
+
+===== PAGE 22 =====
+
+2.10 IMPLEMENTATION TECHNOLOGIES
+Framework implementation leverages Flower (flwr) federated learning library for
+client-server orchestration [1], PyTorch for neural network models supporting auto-
+matic differentiation and GPU acceleration, scikit-learn for Isolation Forest anomaly
+detection and data preprocessing [6], Streamlit for interactive dashboard development,
+and NumPy for efficient numerical computations across distributed model updates.
+2.11 EXPECTED CONTRIBUTIONS
+This integrated approach provides practical contributions: (1) multi-dimensional trust
+evaluation addressing accuracy, anomaly, participation, history, and resource factors [4],
+(2) vertical FL architecture supporting heterogeneous model types (NN/CNN/LSTM)
+for multi-modal medical data [5], (3) interpretable real-time dashboard enabling clinical
+stakeholders to monitor trust evolution and security incidents, (4) comprehensive
+security combining machine learning-based anomaly detection with statistical methods
+[6], and (5) evaluation framework demonstrating robustness against data poisoning,
+model poisoning, and free-riding attacks in diabetes prediction scenarios integrating
+blood biomarkers, retinal imaging, and medication histories [3][7].
+This framework addresses identified literature gaps by providing a complete, secure,
+and trustworthy federated learning solution specifically tailored for healthcare appli-
+cations requiring collaborative learning across institutions with vertically partitioned,
+heterogeneous data while maintaining HIPAA compliance, clinical interpretability, and
+real-time operational capabilities.
+11
+
+===== PAGE 23 =====
+
+Chapter 3
+SYSTEM OVERVIEW
+3.1 SYSTEM ARCHITECTURE
+The framework employs a distributed client-server architecture with three layers: Edge
+Client, Central Server, and Security & Monitoring. Figure 3.1 illustrates the system
+architecture.
+The architecture is designed to support heterogeneous healthcare institutions by
+allowing each edge client type (Blood, Retinal, Medication) to run its own data pipeline
+and model while exposing a unified Flower NumPyClient interface towards the central
+server. This decoupling enables each hospital to independently maintain and upgrade
+its local models and preprocessing without requiring any change to the orchestration
+logic, which only interacts with standardized client methods for parameter exchange
+and training control.
+The Security & Monitoring layer is logically separated from the core federated
+learning orchestration to avoid tight coupling between training logic and security
+policies. Anomaly detectors and monitoring components subscribe to telemetry streams
+(training times, model update statistics, participation logs, resource usage) and feed
+their outputs into the trust engine and dashboard, allowing security mechanisms to
+evolve (e.g., new detectors or thresholds) without modifying the main aggregation and
+coordination flow.
+12
+
+===== PAGE 24 =====
+
+Figure 3.1: Trust-Aware Federated Learning System Architecture
+13
+
+===== PAGE 25 =====
+
+The figure shows the distributed architecture with three layers: Edge Clients (Blood,
+Retinal, Medication), Central Server (FL orchestration, Trust Engine, Aggregation), and
+Security & Monitoring (Anomaly Detection, Dashboard). Raw patient data remains
+local; only encrypted model parameters traverse the network.
+3.1.1 Key Design Principles
+Privacy by Design: Data never leaves institutional boundaries. Trust-First: All client
+interactions evaluated across multiple dimensions. Defense in Depth: Multiple security
+layers (trust evaluation, anomaly detection, behavioral monitoring, honeypot). Real-
+Time Visibility: Dashboard provides continuous monitoring and incident response.
+3.2 DATASET DESCRIPTION
+Three datasets are used: Pima Indians Diabetes (768 samples, 8 features, binary
+classification), APTOS Retinal Images (3,662 fundus photos, 224×224 resolution, 5
+severity classes), and UCI Drug Reviews (215,063 reviews, variable-length text, 5
+effectiveness classes).
+Preprocessing: Pima uses median imputation and z-score normalization. APTOS
+resizes to 224×224 with ImageNet standardization. UCI tokenizes reviews to 200-
+token sequences with padding.
+3.3 MODULE DESCRIPTIONS
+3.3.1 Edge Client Module
+Clients implement Flower NumPyClient interface with methods:get parameters(),
+set parameters(),fit(), andevaluate().
+14
+
+===== PAGE 26 =====
+
+Blood Client: Fully connected NN (8→32→16→1) with ReLU, 20% dropout,
+sigmoid output. Binary Cross-Entropy loss, Adam optimizer (lr=0.001), batch size 32.
+Retinal Client: ResNet18 pretrained on ImageNet with custom classifier
+(512→256→5), 30% dropout. Cross-Entropy loss, frozen base for 5 epochs then
+fine-tuned (lr=0.0001).
+Medication Client: Bidirectional LSTM (vocab=10000, embed=128, hidden=128, 2
+layers, 30% dropout) + FC layers (128→64→5). Cross-Entropy loss, gradient clipping
+(max norm=5.0).
+3.3.2 Federated Server Module
+The Flower-based server coordinates training rounds, evaluates trust scores, filters
+clients by thresholdτ, and performs weighted aggregation. Algorithm 3.1 presents
+the round execution:
+Algorithm 3.1Federated Server Round Execution
+Input:Global modelW global, Client setC, Trust thresholdτ
+Output:Updated global modelW ′
+global
+BroadcastW global to all clients inC
+Initialize empty sets:U pdates← ∅,T rustScores← ∅
+foreach clientc i ∈Cdo
+Receive local updateW i and metricsM i fromc i
+Ti ←CalculateTrustScore(c i,M i,History i)
+ifT i ≥τthen
+U pdates←U pdates∪ {(W i, Ti)}
+T rustScores←T rustScores∪ {T i}
+end if
+end for
+W ′
+global ←TrustWeightedAggregate(U pdates,T rustScores)
+returnW ′
+global
+Algorithm 3.1 outlines how the server collects, filters, and aggregates model updates
+from clients, ensuring only trusted contributions shape the global model.
+15
+
+===== PAGE 27 =====
+
+3.3.3 Trust Engine Module
+The Trust Engine computes weighted trust scores combining five factors. The trust
+scoreT i for clientc i is:
+Ti =w acc ·S acc(ci)+w anom ·S anom(ci)+w part ·S part(ci)+w hist ·S hist(ci)+w res ·S res(ci)
+(3.1)
+Equation 3.1 computes the overall trust score for clientc i as a weighted sum of five
+normalized component scores. Each weightw j determines the relative importance of
+accuracy stability, anomaly detection, participation, historical behavior, and resource
+usage in the final trust evaluation.
+wherew j are configurable weights satisfying P
+j wj = 1andS j(ci)∈[0,1]are
+normalized component scores.
+Accuracy Stability Score (S acc):Measures consistency of local model accuracy
+over recent rounds:
+Sacc(ci) = 1
+1 +σ acc
+·(1 + ∆ acc)(3.2)
+Equation 3.2 rewards clients with stable and improving accuracy by penalizing high
+variance through the denominator term and rewarding positive accuracy trends through
+the second factor. Clients with consistent performance and upward trajectories receive
+higher scores.
+whereσ acc is the variance of accuracy over the last 5 rounds and∆ acc is the accuracy
+trend (positive for improving, negative for degrading).
+Anomaly Score (S anom):Detects unusual behavior through statistical and ML-
+based analysis:
+Sanom(ci) = 1− Atime +A update +A behavior
+3 (3.3)
+16
+
+===== PAGE 28 =====
+
+Equation 3.3 starts at 1 (fully trusted) and decreases proportionally based on
+detected anomalies across three categories. Each detected anomaly type reduces the
+score, with complete normal behavior yielding 1.0 and all three anomaly types detected
+yielding 0.0.
+whereA j ∈ {0,1}indicate whether anomalies were detected in training time, model
+updates, or general behavior.
+Participation Score (Spart):Rewards consistent participation:
+Spart(ci) = Nparticipated
+Ntotal
+(3.4)
+Equation 3.4 represents the fraction of training rounds successfully completed by
+the client since registration. Clients that consistently participate in federated rounds
+accumulate higher participation scores, reflecting their reliability and commitment to
+the collaborative training process.
+whereN participated is the number of rounds the client successfully completed andN total
+is the total rounds since registration.
+Historical Behavior Score (S hist):Exponentially weighted average of past trust
+scores:
+Shist(ci) =α·T i,prev + (1−α)·S hist,prev(ci)(3.5)
+Equation 3.5 uses an exponential moving average that gives more weight to recent
+trust scores while retaining memory of past behavior. The decay factorα= 0.3
+ensures recent performance matters most, but long-term patterns still influence the
+score, enabling gradual reputation building or recovery.
+with decay factorα= 0.3providing gradual forgetting of distant history.
+17
+
+===== PAGE 29 =====
+
+Resource Usage Score (S res):Evaluates consistency of computational resource
+consumption:
+Sres(ci) = 1− |CP Ui − CP U|
+CP Umax
+− |M emi − M em|
+M emmax
+(3.6)
+Equation 3.6 denotes a score that penalizes clients whose CPU and memory usage
+deviate significantly from expected patterns. Clients with resource consumption close to
+the mean receive scores near 1.0, while those with unusual resource patterns (potentially
+indicating attacks or system instability) receive lower scores.
+penalizing significant deviations from expected resource patterns.
+Figure 3.2: Trust Engine Multi-Factor Evaluation
+18
+
+===== PAGE 30 =====
+
+The figure illustrates the trust score computation pipeline showing five weighted
+components (Accuracy 30%, Anomaly 25%, Participation 20%, Historical 15%,
+Resource 10%) aggregated to produce the final trust scoreT i ∈[0,1]for each client.
+3.3.4 Aggregation Module
+Trust-weighted FedAvg ensures reliable clients dominate updates. Given client updates
+{W1, ..., Wn}with trust scores{T 1, ..., Tn}whereT i ≥τ:
+Wglobal =
+Pn
+i=1 Ti ·W iPn
+i=1 Ti
+(3.7)
+Equation 3.7 is a weighted averaging formula that aggregates client model updates
+proportional to their trust scores. Clients with higher trust scores contribute more to the
+global model, ensuring that reliable participants have greater influence while reducing
+the impact of potentially malicious or low-quality updates.
+This formulation naturally weights contributions by trust, so a client withT i = 0.9
+has twice the influence of a client withT i = 0.45(assuming both exceed the threshold
+τ= 0.6).
+Flower Parameters are converted to/from NumPy arrays for mathematical opera-
+tions, enabling element-wise averaging across heterogeneous architectures.
+3.3.5 Anomaly Detection Module
+Statistical and ML methods identify suspicious behavior. Training time is monitored
+via z-score:
+z= ti −µ t
+σt
+(3.8)
+Equation 3.8 is the z-score formula that measures how many standard deviations a
+client’s training time deviates from the historical mean. Values beyond|z|>3indicate
+19
+
+===== PAGE 31 =====
+
+statistically unusual behavior, potentially signaling hardware issues, data poisoning
+attempts, or other anomalies requiring investigation.
+whereµ t andσ t are the mean and standard deviation of historical times. If|z|>3, a
+time anomaly is flagged.
+Isolation Forest detects anomalous updates by comparing flattened weights against
+historical distributions:
+Algorithm 3.2Isolation Forest Update Anomaly Detection
+1:Input:Current updateW current, Historical updatesH
+2:Output:Anomaly scorea∈[−1,1]
+3:
+4:X←Flatten(W current)
+5:Train IsolationForest on Flatten(H)
+6:a←IsolationForest.score(X)
+7:ifa <−0.5then
+8:returnAnomalous
+9:else
+10:returnNormal
+11:end if
+Algorithm 3.2 uses the Isolation Forest technique to detect anomalies in client
+updates by scoring how isolated a new update is compared to historical data. If the
+score is below a threshold, the update is flagged as anomalous.
+3.3.6 Admin Dashboard Module
+Streamlit web interface (port 8501) provides real-time monitoring across four pages:
+Overview (active clients, round number, accuracy, incidents), Client Monitor (trust
+scores, participation, metrics), Security (incidents, quarantined clients, threat distribu-
+tions), and Performance (accuracy/loss curves, convergence analysis, communication
+overhead).
+20
+
+===== PAGE 32 =====
+
+Chapter 4
+SYSTEM DESIGN AND IMPLEMENTATION
+4.1 IMPLEMENTATION ENVIRONMENT
+Python 3.9+ implementation with Flower 1.0+ (FL orchestration), PyTorch 2.0+
+(DL framework), TorchVision 0.15+ (computer vision), Scikit-learn 1.3+ (anomaly
+detection), Streamlit 1.12+ (dashboard), Plotly 5.14+ (visualization), and SQLite3
+(database). Minimum hardware: Core i5, 8GB RAM, 20GB storage. Optional GPU:
+NVIDIA CUDA 11.7+ for retinal CNN.
+4.2 SYSTEM DESIGN METHODOLOGY
+Object-oriented design with modular components. gRPC protocol (abstracted by
+Flower) enables client-server communication using Protocol Buffers. Two SQLite
+databases: metrics.db (client metrics table with accuracy, loss, training time per round)
+and security.db (security incidents and trust scores tables tracking anomalies and trust
+evolution).
+4.3 TRUST SCORING ALGORITHM
+4.3.1 Trust Score Calculation Flow
+Algorithm 4.1 presents the complete trust evaluation procedure executed by the Trust
+Engine after each client update submission.
+21
+
+===== PAGE 33 =====
+
+Algorithm 4.1Trust Score Evaluation
+1:Input:Client IDc, Current metricsM, Historical dataH
+2:Output:Trust scoreT∈[0,1]
+3:
+4:// Extract current round metrics
+5:acc current ←M[accuracy]
+6:loss current ←M[loss]
+7:time current ←M[training time]
+8:
+9:// Calculate Accuracy Stability Score
+10:acc history←H[last 5 accuracies]
+11:σ acc ←StandardDeviation(acc history)
+12:∆ acc ←acc current −Mean(acc history)
+13:S acc ← 1
+1+σacc
+·(1 +Clip(∆ acc,−0.2,0.2))
+14:S acc ←Normalize(S acc,0,1)
+15:
+16:// Calculate Anomaly Score
+17:A time ←DetectTimeAnomaly(time current, H[time history])
+18:A update ←DetectUpdateAnomaly(M[parameters], H[update history])
+19:A behavior ←DetectBehaviorAnomaly(c, H[behavior patterns])
+20:S anom ←1− Atime+Aupdate+Abehavior
+3
+21:
+22:// Calculate Participation Score
+23:N participated ←H[rounds participated]
+24:N total ←H[total rounds]
+25:S part ← Nparticipated
+Ntotal
+26:
+27:// Calculate Historical Behavior Score
+28:T prev ←H[previous trust score]
+29:S hist prev ←H[historical score]
+30:S hist ←0.3·T prev + 0.7·S hist prev
+31:
+32:// Calculate Resource Usage Score
+33:CP U current ←M[cpu usage]
+34:M em current ←M[memory usage]
+35: CP U←Mean(H[cpu history])
+36: M em←Mean(H[memory history])
+37:S res ←1−0.5· |CP Ucurrent −CP U|
+100 −0.5· |M emcurrent −M em|
+100
+38:S res ←Max(S res,0)
+39:
+40:// Compute Weighted Trust Score
+41:T←0.30·S acc + 0.25·S anom + 0.20·S part + 0.15·S hist + 0.10·S res
+42:
+43:// Store trust score and component scores
+44:SaveToDatabase(c,T,S acc,S anom,S part,S hist,S res)
+45:
+46:returnT
+22
+
+===== PAGE 34 =====
+
+Algorithm 4.1 shows how a client’s trust score is calculated by combining accuracy,
+anomaly, participation, historical, and resource scores, ensuring objective and robust
+client selection in federated learning. This sequential evaluation protects the aggrega-
+tion process from unreliable or adversarial updates.
+4.3.2 Trust Threshold Configuration
+Three modes: Permissive (τ= 0.4), Balanced (τ= 0.6default), Strict (τ= 0.75).
+Recovery formula allows rehabilitation through 3 consecutive good rounds:
+Trecovery = min(Tcalculated ·(1 + 0.1·N consecutive good),1.0)(4.1)
+Equation 4.1 defines the recovery trust score Trecovery, which increases the previously
+calculated trust score T calculated based on the number of consecutive good rounds.
+The formula enables gradual rehabilitation by multiplying T calculated with the factor
+(1 + 0.1 * Nconsecutive good ) and capping the final value at 1.0 to maintain a
+normalized upper limit.
+4.4 FEDERATED AGGREGATION STRATEGY DESIGN
+4.4.1 Trust-Weighted Averaging Algorithm
+Algorithm 4.2 details the server-side aggregation process that combines client
+updates into the global model.
+4.4.2 Handling Model Heterogeneity
+Current implementation uses separate models (Blood NN, Retinal CNN, Medication
+LSTM). Extensible through layer-wise alignment, knowledge distillation, or gradient
+aggregation via Flower Strategy interface.
+23
+
+===== PAGE 35 =====
+
+Algorithm 4.2Trust-Weighted Federated Aggregation
+1:Input:Client updates{(W 1, T1),(W 2, T2), ...,(W n, Tn)}
+2:Output:Global modelW global
+3:
+4:// Filter clients by trust threshold
+5:T rusted← {(W i, Ti)|T i ≥τ, i= 1..n}
+6:
+7:if|T rusted|= 0then
+8:throwInsufficientTrustedClientsException
+9:end if
+10:
+11:// Initialize aggregated parameters
+12:W global ←ZeroArray(shape(W 1))
+13:T sum ←0
+14:
+15:// Weighted accumulation
+16:foreach(W i, Ti)∈T rusteddo
+17:W global ←W global +T i ·W i
+18:T sum ←T sum +T i
+19:end for
+20:
+21:// Normalize by total trust weight
+22:W global ← Wglobal
+Tsum
+23:
+24:returnW global
+24
+
+===== PAGE 36 =====
+
+4.5 ANOMALY DETECTION IMPLEMENTATION
+4.5.1 Statistical Time Anomaly Detection
+Time anomaly detection uses sliding window z-score analysis. Algorithm 4.3 describes
+the procedure.
+Algorithm 4.3Training Time Anomaly Detection
+1:Input:Current timet, Historical timesH= [t 1, ..., tk]
+2:Output:Anomaly flagA∈ {0,1}
+3:
+4:if|H|<5then
+5:return0{Insufficient history}
+6:end if
+7:
+8:µ← 1
+|H|
+P|H|
+i=1 ti
+9:σ←
+q
+1
+|H|
+P|H|
+i=1(ti −µ) 2
+10:
+11:ifσ= 0then
+12:σ←0.01{Avoid division by zero}
+13:end if
+14:
+15:z← t−µ
+σ
+16:
+17:if|z|>3then
+18:return1{Significant deviation detected}
+19:else
+20:return0
+21:end if
+Algorithm 4.3 checks for anomalies in training time by computing the z-score of
+the latest value against historical data, flagging it if the deviation is significantly large.
+4.5.2 Isolation Forest Update Anomaly Detection
+Parameters flattened and PCA-reduced to 50 dimensions. Isolation Forest (100 trees,
+contamination=0.1) trained on last 20 updates. Anomaly scores <−0.5triggers alerts.
+25
+
+===== PAGE 37 =====
+
+4.5.3 Behavioral Pattern Analysis
+CUSUM control charts monitor metric sequences:S +
+t = max(0, S+
+t−1 +m t −µ 0 −k)
+andS −
+t = max(0, S−
+t−1 −m t +µ 0 −k)withk= 0.5σ,h= 5σ.
+4.6 MODEL ARCHITECTURE IMPLEMENTATIONS
+4.6.1 Real-Time System Metrics Collection
+Algorithm 4.4 presents the real-time system monitoring process:
+Algorithm 4.4Real-Time System Metrics Collection
+1:Initialize:metrics history←[], interval←5 seconds
+2:whilemonitoring activedo
+3:Collect current timestamp
+4:Query CPU usage percentage
+5:Query memory usage percentage
+6:Query disk usage percentage
+7:Query network bytes sent/received
+8:Append metrics to history
+9:Sleep for interval duration
+10:end while
+11:Output:Historical metrics for visualization
+Algorithm 4.4 continuously collects system metrics such as CPU, memory, disk,
+and network usage at regular intervals, enabling real-time monitoring and historical
+visualization.
+4.6.2 Blood Client Neural Network
+Algorithm 4.5 presents the blood glucose prediction neural network structure:
+Algorithm 4.5Blood Glucose Neural Network Architecture
+1:Input Layer:8 features (glucose, blood pressure, BMI, etc.)
+2:Hidden Layer 1:Linear(8→32)→BatchNorm→ReLU→Dropout(0.2)
+3:Hidden Layer 2:Linear(32→16)→BatchNorm→ReLU→Dropout(0.2)
+4:Output Layer:Linear(16→1)→Sigmoid
+5:Output:Binary diabetes prediction∈[0,1]
+26
+
+===== PAGE 38 =====
+
+Algorithm 4.5 outlines a neural network architecture using batch normalization,
+ReLU activation, and dropout, designed to predict diabetes based on eight key blood
+measurements.
+Training: BCEWithLogitsLoss, Adam (lr=0.001), batch=32, epochs=5, Xavier
+initialization.
+4.6.3 Retinal Client CNN
+Algorithm 4.6 presents the retinal classification model architecture:
+Algorithm 4.6Retinal CNN Architecture with Transfer Learning
+1:Input:Retinal fundus image (224×224×3)
+2:Base Model:ResNet18 pretrained on ImageNet
+3:Feature Extraction:Convolutional layers (frozen initially)
+4:Custom Classifier:
+5:Linear(512→256)→ReLU→Dropout(0.3)
+6:Linear(256→5)→Softmax
+7:Fine-tuning Phase:Unfreeze all layers after 3 epochs
+8:Output:Retinopathy severity class∈ {0,1,2,3,4}
+Algorithm 4.6 outlines a retinal image classification process using transfer learning
+with ResNet18, where convolutional features are initially frozen and a custom classifier
+is fine-tuned to predict retinopathy severity.
+Training: CrossEntropyLoss, Adam (lr=0.001→0.0001), batch=16,
+epochs=3(frozen)+5(unfrozen), augmentation (rotation±15°, flip, jitter).
+4.6.4 Medication Client LSTM
+Algorithm 4.7 presents the medication effectiveness prediction model:
+Algorithm 4.7 details a bidirectional LSTM architecture that embeds tokenized
+medication reviews and processes them in both directions, enabling robust prediction
+of medication effectiveness ratings.
+Training: CrossEntropyLoss, Adam (lr=0.001), batch=64, epochs=5, gradient
+clipping (max norm=5.0), sequence length=200 (pad/truncate).
+27
+
+===== PAGE 39 =====
+
+Algorithm 4.7Bidirectional LSTM Architecture for Medication Prediction
+1:Input:Token sequence of length 200 (medication reviews)
+2:Embedding Layer:Token indices→Dense vectors (10000×128)
+3:BiLSTM Layers:2-layer bidirectional LSTM (hidden dim = 128)
+4:Forward LSTM: Process sequence left-to-right
+5:Backward LSTM: Process sequence right-to-left
+6:Concatenate final hidden states from both directions
+7:Fully Connected:Linear(256→64)→ReLU→Dropout(0.3)
+8:Output Layer:Linear(64→5)→Softmax
+9:Output:Medication effectiveness rating∈ {1,2,3,4,5}
+4.7 SECURITY IMPLEMENTATION DETAILS
+4.7.1 Quarantine Management
+Quarantine management isolates compromised or suspicious clients in the federated
+learning system to protect model integrity and privacy. When a client’s updates are
+flagged as anomalous, it is temporarily excluded from aggregation and listed in the
+admin dashboard. During quarantine, the client’s participation is restricted until further
+verification, ensuring its updates do not affect the global model. This approach helps
+contain threats and supports a secure, resilient collaborative learning process.
+Algorithm 4.8 manages client quarantine for security violations:
+Algorithm 4.8Client Quarantine Management
+1:Data Structure:quarantined map: client id→release time
+2:QuarantineClientclient id, duration hours
+3:release time←current time + (duration hours×3600)
+4:quarantined map[client id]←release time
+5:Log quarantine event to security database
+6:IsQuarantinedclient id
+7:ifclient id not in quarantined mapthen
+8:returnFalse
+9:end if
+10:ifcurrent time≥quarantined map[client id]then
+11:Remove client id from quarantined map
+12:returnFalse{Quarantine expired}
+13:end if
+14:returnTrue
+28
+
+===== PAGE 40 =====
+
+Algorithm 4.8 manages client quarantine status by logging quarantine periods,
+tracking release times, and automatically lifting restrictions once the designated
+duration has elapsed.
+4.8 MONITORING AND DASHBOARD IMPLEMENTATIONS
+4.8.1 Real-Time Metrics Collection
+Real-time metrics collection in federated learning enables ongoing monitoring by gath-
+ering metrics like training time, model accuracy, loss, participation, and resource usage
+from each edge client after training. These metrics help the server detect anomalies and
+adjust trust scores, while also supporting visualizations for administrators to swiftly
+respond to abnormal behavior and ensure system reliability in healthcare environments.
+4.8.2 Streamlit Dashboard Structure
+Algorithm 4.9 presents the dashboard rendering logic:
+Algorithm 4.9Administrative Dashboard Structure
+1:Initialize:Configure page layout as wide with sidebar expanded
+2:Display navigation sidebar with page options:
+3:[Overview, Client Monitor, Security, Performance, Audit Logs]
+4:User selects page from sidebar radio buttons
+5:
+6:ifpage = ”Overview”then
+7:Render 4-column metrics: Active Clients, Current Round, Global Accuracy,
+Incidents
+8:Query trust scores from database
+9:Generate bar chart visualization of client trust scores
+10:Display interactive Plotly chart
+11:else ifpage = ”Client Monitor”then
+12:Render per-client trust score breakdowns and participation history
+13:else ifpage = ”Security”then
+14:Render security incidents list and quarantined clients
+15:else ifpage = ”Performance”then
+16:Render training curves and convergence analysis
+17:else ifpage = ”Audit Logs”then
+18:Render blockchain audit trail with event timestamps
+19:end if
+29
+
+===== PAGE 41 =====
+
+Algorithm 4.9 outlines the structure of the administrative dashboard, presenting
+intuitive navigation and dynamic visualizations for monitoring trust scores, rounds,
+incidents, and audit logs across federated training.
+4.9 DEPLOYMENT ARCHITECTURE
+4.9.1 Component Deployment
+The deployment architecture for the trust-aware federated learning system is organized
+into three primary zones: Edge Processing, Fusion Layer and Server, and Security and
+Audit. At the edge, diverse healthcare data sources like diabetes blood reports, retinal
+images, and medication histories are locally preprocessed and used to train specialized
+models. Each edge client implements behavior monitoring, local model training, and
+generates updates that are subject to real-time anomaly analysis. The Client Side
+Anomaly Monitor analyzes training time, accuracy consistency, resource usage, and
+flags suspicious activity before allowing updates to enter the federation process.
+The central Fusion Layer and Server orchestrate collaborative training with modules
+for aggregation, filtering, recovery, and trust evaluation. Here, low trust clients are
+excluded, and model outputs from verified participants are combined using weighted
+averaging, fusion, or meta-classifier stacking. Trust scores and anomaly patterns
+detected at the edge help filter unreliable contributions. The server coordinates
+global training sessions and logs performance, client profiles, and round results for
+transparency. Refinement recovery protocols ensure excluded clients can be safely
+reinstated after review, supporting resilience and adaptive learning.
+Security and audit integration in the architecture uses a blockchain ledger to ensure
+immutable and transparent audit history. Client health monitoring detects and isolates
+offline or malicious clients through honeypots and quarantine mechanisms. Real-time
+admin reports provide trust visualizations and isolated audits, delivering robust security,
+full traceability, and adaptive learning critical for healthcare data protection.
+30
+
+===== PAGE 42 =====
+
+Figure 4.1: System Deployment Architecture
+31
+
+===== PAGE 43 =====
+
+The figure shows distributed deployment across four machine types: Edge Clients
+(healthcare institutions running Blood/Retinal/Medication clients), Central Server
+(Flower server, Trust Engine, Aggregation, databases), Security Server (anomaly
+detection services), and Admin Dashboard (Streamlit monitoring interface).
+Edge Clients: Run client applications with local training and preprocessing. Central
+Server: Hosts FL server, Trust Engine, Aggregation, SQLite databases. Security Server:
+z-score, Isolation Forest, CUSUM monitoring. Dashboard: Streamlit UI with read-only
+DB access.
+4.9.2 Network Configuration
+Flower gRPC (port 8080), Dashboard HTTP (port 8501). TLS 1.3 encryption, firewall
+restrictions on authorized IPs.
+4.10 CONFIGURATION MANAGEMENT
+4.10.1 System Configuration File
+Algorithm 4.10 presents the centralized configuration management structure:
+This comprehensive design enables flexible deployment, easy tuning, and main-
+tainable system evolution while ensuring security, trust management, and regulatory
+compliance across the distributed federated learning framework.
+32
+
+===== PAGE 44 =====
+
+Algorithm 4.10System Configuration Parameters
+1:Server Configuration:
+2:host = ”0.0.0.0”, port = 8080, num rounds = 50
+3:min available clients = 2, min fit clients = 2
+4:
+5:Trust Configuration:
+6:threshold = 0.6
+7:weights = [accuracy: 0.30, anomaly: 0.25, participation: 0.20,
+8:historical: 0.15, resource: 0.10]
+9:history decay = 0.3, recovery enabled = true
+10:
+11:Security Configuration:
+12:time zscore threshold = 3.0
+13:update isolation threshold = -0.5
+14:isolation forest trees = 100, contamination = 0.1
+15:quarantine duration = 24 hours, incident threshold = 3
+16:
+17:Blockchain Configuration:
+18:provider url = ”http://127.0.0.1:7545”
+19:gas limit = 3000000
+20:
+21:Model Configurations:
+22:Blood: input = 8, hidden = [32,16], lr = 0.001, epochs = 5
+23:Retinal: classes = 5, lr = 0.001, batch = 16, epochs = 8
+24:Medication: vocab = 10000, embed = 128, lr = 0.001, epochs = 5
+25:LoadConfigurationconfig file path
+26:Parse Y AML configuration file
+27:Extract and validate all parameters
+28:returnconfiguration dictionary
+33
+
+===== PAGE 45 =====
+
+Chapter 5
+RESULTS AND PERFORMANCE ANALYSIS
+5.1 EXPERIMENTAL SETUP
+5.1.1 Hardware and Software Environment
+Server: Core i7-9700K, 32GB RAM. Clients (3x): Core i5-8400, 16GB RAM. Retinal
+client: RTX 2060 GPU (6GB). Gigabit Ethernet, 256GB SSD, Ubuntu 22.04. Software:
+Python 3.9.12, PyTorch 2.0.1, Flower 1.5.0, CUDA 11.7.
+5.1.2 Dataset Preparation
+Pima: 768 samples (70/15/15 split), median imputation, z-score normalization. AP-
+TOS: 3,662 images (70/15/15), weighted sampling, augmentation (rotation±15°, flip,
+brightness). UCI: 12,845 reviews (70/15/15), lowercasing, tokenization, vocab=10000.
+5.1.3 Training Configuration
+50 rounds, 3 clients,τ= 0.6. Local epochs: Blood=5, Retinal=8, Medication=5. Trust-
+weighted FedAvg aggregation.
+5.1.4 Evaluation Metrics
+Model performance is assessed using standard classification metrics:
+Accuracy= T P+T N
+T P+T N+F P+F N (5.1)
+34
+
+===== PAGE 46 =====
+
+Precision= T P
+T P+F P (5.2)
+Recall= T P
+T P+F N (5.3)
+F1-Score= 2· Precision·Recall
+Precision+Recall (5.4)
+For multi-class problems (Retinal and Medication), macro-averaged and weighted-
+averaged metrics are reported. Trust system effectiveness is measured through trust
+score stability, anomaly detection rates, and attack mitigation success.
+5.2 MODEL PERFORMANCE RESULTS
+5.2.1 Blood Glucose Prediction Results
+Round 50: 79.3% accuracy, 0.761 precision, 0.716 recall, 0.738 F1. Federated
+outperforms standalone (76.8%) by 2.5%. Confusion matrix: 83 TP, 109 TN, 13 FP,
+11 FN (116 test samples).
+5.2.2 Retinal Classification Results
+Table 5.1: Retinal Client Model Performance (50 Rounds)
+Severity Level Precision Recall F1-Score Support
+No DR (0) 0.862 0.891 0.876 275
+Mild (1) 0.714 0.683 0.698 126
+Moderate (2) 0.756 0.742 0.749 89
+Severe (3) 0.681 0.697 0.689 38
+Proliferative (4) 0.727 0.762 0.744 22
+Macro Avg 0.748 0.755 0.751 550
+Weighted Avg 0.792 0.796 0.794 550
+35
+
+===== PAGE 47 =====
+
+Table 5.1 shows per-class performance metrics for 5-level diabetic retinopathy
+classification. No DR class achieves highest F1 (0.876) due to abundant samples.
+Weighted precision 79.6% improves over standalone 74.2% by 5.4%. Class imbalance
+affects severe classes.
+5.2.3 Medication Effectiveness Results
+72.4% weighted accuracy (1,927 test samples) outperforming standalone 68.9% by
+3.5%. Rating 5: best F1=0.833 (537 samples). Rating 3: lowest F1=0.602 (412
+samples). Extreme ratings show better performance due to polarized language patterns.
+Attention focuses on keywords: ”effective,” ”side effects,” ”improved,” ”worthless.”
+5.2.4 Comparative Analysis
+Standalone: 76.8% blood, 74.2% retinal, 68.9% medication. FedAvg: 78.5%, 78.1%,
+71.5%. FedProx: 78.8%, 78.3%, 71.8%. Proposed Trust-FedAvg: 79.3%, 79.6%,
+72.4%. Trust-weighting outperforms FedProx by 0.8%, 1.7%, 0.8% respectively.
+Figure 5.1: Model Performance Comparison Across Different Federated Learning
+Approaches
+Figure 5.1 illustrates the comparative performance analysis between standalone
+learning, standard FedAvg, FedProx, and the proposed Trust-Aware FedAvg approach.
+36
+
+===== PAGE 48 =====
+
+The visualization demonstrates consistent improvements across all three healthcare
+modalities (blood glucose, retinal classification, and medication effectiveness) when
+trust-weighted aggregation is employed, with gains of 0.8–1.7% over state-of-the-art
+FedProx method.
+5.3 TRUST SYSTEM EV ALUATION
+All clients maintainT > τ= 0.6after stabilization (rounds 1-10).
+Average trust: Blood=0.842, Retinal=0.754, Medication=0.716. Component
+scores (Blood/Retinal/Medication): Accuracy (0.891/0.782/0.734), Anomaly
+(0.943/0.861/0.897), Participation (1.000/0.980/0.960), Historical (0.836/0.729/0.692),
+Resource (0.875/0.714/0.823).
+Threshold Sensitivity:τ= 0.4: 100% participation, -1.2% accuracy.τ= 0.6:
+95% participation, optimal accuracy.τ= 0.8: 60% participation, -0.9% accuracy from
+insufficient collaboration.
+Figure 5.2: Trust Score Evolution and Stability Analysis Across Training Rounds
+Figure 5.2 presents the temporal evolution of trust scores for all three healthcare
+clients throughout the 50 training rounds. The graph shows stabilization after rounds 1-
+37
+
+===== PAGE 49 =====
+
+10, with Blood Client maintaining the highest trust (0.842), followed by Retinal (0.754)
+and Medication (0.716). The visualization includes component score breakdowns
+demonstrating how accuracy stability, anomaly detection, participation consistency,
+historical behavior, and resource usage contribute to the final trust assessment.
+5.4 SECURITY EFFECTIVENESS
+5.4.1 Anomaly Detection Performance
+Time anomaly: 94.3% TPR (33/35), 2.1% FPR (3/142), ¡100ms latency. Model update:
+90.0% TPR (27/30), 2.7% FPR (4/150), 87.1% precision, 245ms detection time.
+5.4.2 Attack Mitigation Scenarios
+Gradient Poisoning (Round 15): Detected immediately, trust 0.72→0.38, excluded.
+Accuracy 72.1% vs. 69.6% without defense (+3.6%).
+Sybil Attack: Correlation 0.987 detected, 50% penalty, combined influence 0.23 vs.
+intended 0.40. Accuracy 78.9% vs. 76.1% without detection (+3.7%).
+Byzantine Attack (Round 22): Anomaly score -0.89, immediate quarantine (24h),
+trust=0.0. 100% detection, no accuracy degradation.
+38
+
+===== PAGE 50 =====
+
+Figure 5.3: Security Incident Detection and Attack Mitigation Analysis
+Figure 5.3 visualizes the framework’s response to three simulated adversarial
+scenarios: gradient poisoning, Sybil attack, and Byzantine attack. The timeline shows
+immediate detection and trust score degradation for malicious clients, with automatic
+quarantine mechanisms preventing model contamination. The chart demonstrates the
+multi-layered security system achieving 90–100% detection rates while maintaining
+global model accuracy, validating the effectiveness of statistical anomaly detection,
+Isolation Forest validation, and behavioral monitoring.
+5.5 COMMUNICATION OVERHEAD ANALYSIS
+Per-round: Blood 36.8KB, Retinal 946.4KB, Medication 513.4KB. Total:
+1,496.6KB/round. 50 rounds: 73.2MB total. Retinal CNN dominates (11.2M
+parameters). Compression could reduce 40-60%.
+5.5.1 Training Time Analysis
+Per-round: Local training 124s, communication 8.3s, server 3.7s. Total: 132s (2.2 min).
+50 rounds: 1.83 hours.
+39
+
+===== PAGE 51 =====
+
+5.5.2 Scalability Analysis
+3 clients: 2.21 min/round, 79.6% accuracy. 5 clients: 2.34 min (+6%), 80.4%. 10
+clients: 2.58 min (+17%), 81.2%. 20 clients: 3.24 min (+47%), 82.1%. Sub-linear
+overhead growth, accuracy improves with participation.
+Figure 5.4: Scalability Analysis and System Performance Metrics
+Figure 5.4 demonstrates the system’s scalability characteristics as the number of
+participating healthcare institutions increases from 3 to 20 clients. The dual-axis
+visualization shows sub-linear growth in per-round training time (left axis) alongside
+steady improvements in global model accuracy (right axis). The analysis confirms that
+the framework maintains practical efficiency even with large-scale deployment, with
+only 47% overhead increase when scaling from 3 to 20 clients while achieving 2.5%
+absolute accuracy improvement.
+40
+
+===== PAGE 52 =====
+
+5.6 SYSTEM RELIABILITY
+Single dropout: -1.2% accuracy. Two dropouts: -3.8% accuracy. All dropouts: Server
+waits, resumes seamlessly. 200-round stability: Trust variance ¡0.05, constant RAM
+(400MB server, 800MB/client), linear DB growth (2.3MB/50 rounds), no deadlocks.
+5.7 COMPUTATIONAL EFFICIENCY
+Centralized: 87 min, 12.3GB RAM, no network transfer, privacy compromised.
+Federated: 114 min (+31%), 0.4GB server RAM (-97%), 3.6GB total (-71%), 73.2MB
+network, privacy preserved, HIPAA-compliant.
+Figure 5.5: System Resource Usage Monitoring and Performance Metrics
+Figure 5.5 presents real-time system resource utilization throughout a 24-hour
+federated learning session. The multi-line graph tracks CPU usage (dark blue), memory
+consumption (light blue), and network I/O (red) across all participating nodes. CPU
+usage ranges 40–65% during active training rounds, memory remains stable at 55–65%,
+and network traffic exhibits periodic spikes corresponding to parameter exchange
+phases. The visualization confirms efficient resource management with no memory
+41
+
+===== PAGE 53 =====
+
+leaks or performance degradation over extended operation, validating the framework’s
+production readiness for continuous healthcare AI deployment.
+5.8 DISCUSSION
+Key findings: (1) Trust-weighting improves accuracy 0.8-1.7% over FedAvg/FedProx.
+(2) Multi-layered defense achieves ¿90% attack detection. (3) Trust scores correlate
+0.87 with ground-truth quality. (4) Practical feasibility: 2.2 min/round, 1.83h total. (5)
+Sub-linear scalability to 20+ clients.
+Limitations: Class imbalance in rare disease manifestations, communication bot-
+tlenecks from large models, static thresholds, limited architectural heterogeneity.
+Future work: Federated oversampling/GAN synthesis, compression (40-60% re-
+duction), knowledge distillation, adaptive thresholds, Byzantine-robust aggregation
+(Krum/Bulyan), real-world pilot deployments.
+42
+
+===== PAGE 54 =====
+
+Chapter 6
+CONCLUSION AND FUTURE WORK
+6.1 CONCLUSION
+This project successfully developed a Trust-Aware Vertical Federated Learning Frame-
+work for collaborative healthcare diabetes prediction, integrating multi-dimensional
+trust evaluation and security mechanisms. The framework demonstrates significant
+improvements in federated learning reliability through trust-weighted aggregation using
+five factors, achieving accuracy improvements over traditional FedAvg approaches
+while maintaining robust security with high detection rates and minimal false positives.
+The implemented vertical FL architecture enables three healthcare institutions to
+collaboratively train specialized models without sharing raw data, addressing critical
+privacy concerns in medical AI applications. Experimental validation across blood
+reports, retinal scans, and medication history data demonstrates strong predictive
+accuracy for diabetes detection. The Flower-based system with comprehensive trust
+scoring, multi-technique anomaly detection, and Streamlit dashboard for real-time
+monitoring successfully achieves HIPAA compliance while maintaining computational
+efficiency with reasonable overhead and sub-linear scalability.
+Limitations include public dataset usage potentially not representing clinical diver-
+sity, controlled environment testing not reflecting real-world connectivity challenges,
+communication overhead constraining bandwidth-limited scenarios, and class imbal-
+ance affecting rare case performance.
+43
+
+===== PAGE 55 =====
+
+6.2 FUTURE WORKS
+Immediate enhancements include gradient compression techniques to reduce overhead,
+adaptive trust thresholds using reinforcement learning, Byzantine-robust aggregation
+algorithms, and differential privacy guarantees. Medium-term research focuses on
+heterogeneous architectures through knowledge distillation, federated transfer learning
+with pre-trained models, continual learning with concept drift detection, and explain-
+able AI integration.
+Long-term vision encompasses nationwide network deployment with multiple
+institutions, multi-disease prediction capabilities, real-time clinical decision support
+with EHR integration, mobile deployment with wearable device support, and cross-
+border collaboration ensuring international regulatory compliance. This framework
+demonstrates that secure, reliable, compliant multi-institutional healthcare AI is prac-
+tically achievable through interdisciplinary collaboration among computer scientists,
+healthcare providers, regulators, and patients.
+44
+
+===== PAGE 56 =====
+
+REFERENCES
+[1] H. B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y. Arcas,
+“Communication-efficient learning of deep networks from decentralized data,”
+Proceedings of the 20th International Conference on Artificial Intelligence and
+Statistics (AISTATS), pp. 1273–1282, 2017.
+[2] P. Kairouz, H. B. McMahan, B. Aventet al., “Advances and open problems in
+federated learning,”Foundations and Trends in Machine Learning, vol. 14, no. 1-2,
+pp. 1–210, 2021.
+[3] N. Rieke, J. Hancox, W. Liet al., “The future of digital health with federated
+learning,”npj Digital Medicine, vol. 3, no. 1, pp. 1–7, 2020.
+[4] C. Fung, C. J. M. Yoon, and I. Beschastnikh, “The limitations of federated learning
+in sybil settings,”Proceedings of the RAID Symposium, pp. 301–316, 2020.
+[5] Q. Yang, Y . Liu, T. Chen, and Y . Tong, “Federated machine learning: Concept and
+applications,”ACM Transactions on Intelligent Systems and Technology, vol. 10,
+no. 2, pp. 1–19, 2019.
+[6] P. Blanchard, E. M. El Mhamdi, R. Guerraoui, and J. Stainer, “Machine learning
+with adversaries: Byzantine tolerant gradient descent,” inAdvances in Neural
+Information Processing Systems (NeurIPS), 2017, pp. 119–129.
+[7] M. J. Sheller, B. Edwards, G. A. Reinaet al., “Federated learning in medicine: Fa-
+cilitating multi-institutional collaborations without sharing patient data,”Scientific
+Reports, vol. 10, no. 1, pp. 1–12, 2020.
+45

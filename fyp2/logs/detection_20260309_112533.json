@@ -1,0 +1,137 @@
+{
+  "session_id": "20260309_112533",
+  "timestamp": "2026-03-09T11:25:52.284355",
+  "total_graphs": 8,
+  "total_anomalies": 8,
+  "results": [
+    {
+      "graph_id": "graph_1773035721403",
+      "anomaly_score": 22.546671,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035733231
+    },
+    {
+      "graph_id": "graph_1773035727475",
+      "anomaly_score": 7.556216,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035733238
+    },
+    {
+      "graph_id": "graph_1773035750127",
+      "anomaly_score": 6.421049,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035750133
+    },
+    {
+      "graph_id": "graph_1773035750108",
+      "anomaly_score": 7.664948,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035750141
+    },
+    {
+      "graph_id": "graph_1773035750114",
+      "anomaly_score": 7.53346,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035750151
+    },
+    {
+      "graph_id": "graph_1773035735264",
+      "anomaly_score": 13.172384,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035750156
+    },
+    {
+      "graph_id": "graph_1773035740507",
+      "anomaly_score": 19.428211,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035750163
+    },
+    {
+      "graph_id": "graph_1773035745800",
+      "anomaly_score": 19.378984,
+      "threshold": 2.5,
+      "is_anomalous": true,
+      "timestamp": 1773035750170
+    }
+  ],
+  "alerts": [
+    {
+      "alert_id": "ALERT-1773035733-0001",
+      "graph_id": "graph_1773035721403",
+      "severity": "CRITICAL",
+      "anomaly_score": 22.546671,
+      "timestamp": 1773035733231,
+      "description": "Anomalous behavior detected. Score: 22.5467 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035733-0002",
+      "graph_id": "graph_1773035727475",
+      "severity": "CRITICAL",
+      "anomaly_score": 7.556216,
+      "timestamp": 1773035733238,
+      "description": "Anomalous behavior detected. Score: 7.5562 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035750-0003",
+      "graph_id": "graph_1773035750127",
+      "severity": "HIGH",
+      "anomaly_score": 6.421049,
+      "timestamp": 1773035750133,
+      "description": "Anomalous behavior detected. Score: 6.4210 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035750-0004",
+      "graph_id": "graph_1773035750108",
+      "severity": "CRITICAL",
+      "anomaly_score": 7.664948,
+      "timestamp": 1773035750141,
+      "description": "Anomalous behavior detected. Score: 7.6649 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035750-0005",
+      "graph_id": "graph_1773035750114",
+      "severity": "CRITICAL",
+      "anomaly_score": 7.53346,
+      "timestamp": 1773035750151,
+      "description": "Anomalous behavior detected. Score: 7.5335 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035750-0006",
+      "graph_id": "graph_1773035735264",
+      "severity": "CRITICAL",
+      "anomaly_score": 13.172384,
+      "timestamp": 1773035750156,
+      "description": "Anomalous behavior detected. Score: 13.1724 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035750-0007",
+      "graph_id": "graph_1773035740507",
+      "severity": "CRITICAL",
+      "anomaly_score": 19.428211,
+      "timestamp": 1773035750163,
+      "description": "Anomalous behavior detected. Score: 19.4282 (threshold: 2.5000)"
+    },
+    {
+      "alert_id": "ALERT-1773035750-0008",
+      "graph_id": "graph_1773035745800",
+      "severity": "CRITICAL",
+      "anomaly_score": 19.378984,
+      "timestamp": 1773035750170,
+      "description": "Anomalous behavior detected. Score: 19.3790 (threshold: 2.5000)"
+    }
+  ],
+  "extra": {
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.8571,
+    "accuracy": 0.75,
+    "auc": 0.3333
+  }
+}

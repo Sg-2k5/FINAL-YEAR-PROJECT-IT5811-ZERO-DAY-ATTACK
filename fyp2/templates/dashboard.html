@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero-Day Attack Detection — Live Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #4f8cff;
+    --green: #00e676;
+    --red: #ff5252;
+    --orange: #ffab40;
+    --text: #e0e0e0;
+    --text2: #8a8fa8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #252838 100%);
+    padding: 24px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .header .subtitle { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+  #startBtn {
+    background: var(--accent); color: #fff; border: none; padding: 12px 28px;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+  }
+  #startBtn:hover { background: #6ba0ff; transform: translateY(-1px); }
+  #startBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* Progress bar */
+  .progress-bar-container {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 20px;
+  }
+  .progress-bar-container .label { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+  .progress-track {
+    background: #252838; border-radius: 8px; height: 12px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 8px; width: 0%; transition: width 0.5s ease;
+  }
+  .progress-text { font-size: 13px; color: var(--text2); margin-top: 6px; text-align: right; }
+
+  /* Step cards */
+  .step-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 16px; transition: border-color 0.3s;
+  }
+  .step-card.active { border-color: var(--accent); box-shadow: 0 0 20px rgba(79,140,255,0.1); }
+  .step-card.done { border-color: var(--green); }
+  .step-card.error { border-color: var(--red); }
+
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 14px;
+    background: #252838; color: var(--text2); flex-shrink: 0;
+  }
+  .step-card.active .step-num { background: var(--accent); color: #fff; }
+  .step-card.done .step-num { background: var(--green); color: #000; }
+
+  .step-title { font-weight: 600; font-size: 16px; }
+  .step-desc { color: var(--text2); font-size: 13px; margin-left: 44px; }
+  .step-content { margin-top: 16px; margin-left: 44px; }
+
+  /* Sub-progress */
+  .sub-progress {
+    margin-top: 10px; display: flex; align-items: center; gap: 12px;
+  }
+  .sub-track { flex: 1; background: #252838; height: 6px; border-radius: 4px; overflow: hidden; }
+  .sub-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+  .sub-label { font-size: 12px; color: var(--text2); min-width: 60px; text-align: right; }
+
+  /* Data tables */
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  .data-table th {
+    text-align: left; padding: 8px 12px; background: #252838;
+    color: var(--text2); font-weight: 600; border-bottom: 1px solid var(--border);
+  }
+  .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-normal { background: rgba(0,230,118,0.15); color: var(--green); }
+  .badge-anomaly { background: rgba(255,82,82,0.15); color: var(--red); }
+  .badge-low { background: rgba(255,171,64,0.1); color: var(--orange); }
+  .badge-medium { background: rgba(255,171,64,0.2); color: var(--orange); }
+  .badge-high { background: rgba(255,82,82,0.2); color: var(--red); }
+  .badge-critical { background: rgba(255,82,82,0.3); color: var(--red); }
+  .badge-detected { background: rgba(0,230,118,0.2); color: var(--green); }
+  .badge-missed { background: rgba(255,82,82,0.2); color: var(--red); }
+  .badge-mitre { background: rgba(79,140,255,0.15); color: var(--accent); font-size: 10px; }
+
+  /* Impact table */
+  .impact-section { margin-top: 16px; }
+  .impact-section h4 { font-size: 14px; margin-bottom: 8px; color: var(--text); }
+  .impact-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .impact-table th { text-align: left; padding: 6px 10px; background: #1e2230; color: var(--text2); font-weight: 600; }
+  .impact-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); font-family: 'Cascadia Code', monospace; font-size: 11px; }
+  .impact-table .file-path { color: var(--accent); max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+  .impact-table .change-col { color: var(--orange); }
+  .impact-table .size-col { color: var(--text2); }
+
+  .prevention-card {
+    background: #151820; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; margin-top: 12px;
+  }
+  .prevention-card .atk-name { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .prevention-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* Live activity feed */
+  .live-feed {
+    margin-top: 12px; max-height: 320px; overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 12px;
+    background: #0d0f14; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px;
+  }
+  .live-feed .feed-line {
+    padding: 4px 0; border-bottom: 1px solid rgba(42,45,58,0.4);
+    animation: feedIn 0.4s ease-out;
+  }
+  .live-feed .feed-line:last-child { border-bottom: none; }
+  @keyframes feedIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .feed-phase { color: var(--accent); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .feed-detail { color: var(--text2); margin-left: 8px; }
+  .feed-value { color: var(--green); font-weight: 600; }
+  .feed-loss { color: var(--orange); font-weight: 600; }
+  .feed-attack-name { color: var(--red); font-weight: 700; }
+  .feed-stage { color: var(--accent); font-style: italic; }
+  .feed-file { color: #80cbc4; font-family: 'Cascadia Code', monospace; font-size: 11px; }
+
+  .cl-chunk-card {
+    background: #151820; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; margin-top: 8px;
+  }
+  .cl-chunk-header { font-size: 13px; font-weight: 600; color: var(--text); }
+  .cl-epoch-row { font-size: 12px; color: var(--text2); margin-top: 4px; padding-left: 12px; }
+
+  .atk-live-card {
+    background: linear-gradient(135deg, #1a1015 0%, #151820 100%);
+    border: 1px solid rgba(255,82,82,0.3); border-radius: 8px;
+    padding: 12px 14px; margin-top: 10px;
+  }
+  .atk-live-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .atk-live-name { font-weight: 700; font-size: 14px; color: var(--red); }
+  .atk-live-stages { padding-left: 12px; }
+  .atk-stage-line {
+    font-size: 12px; color: var(--text2); padding: 3px 0;
+    animation: feedIn 0.3s ease-out;
+  }
+  .atk-stage-line .stage-icon { color: var(--orange); }
+
+  /* Metrics */
+  .metrics-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px; margin-top: 12px;
+  }
+  .metric-box {
+    background: #252838; border-radius: 8px; padding: 14px;
+    text-align: center;
+  }
+  .metric-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .metric-label { font-size: 11px; color: var(--text2); margin-top: 4px; text-transform: uppercase; }
+
+  /* Images */
+  .viz-img {
+    max-width: 100%; border-radius: 8px; margin-top: 12px;
+    border: 1px solid var(--border);
+  }
+  .viz-title { font-size: 13px; color: var(--text2); margin-top: 12px; margin-bottom: 4px; font-weight: 600; }
+
+  /* Stats row */
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .stat-pill {
+    background: #252838; border-radius: 20px; padding: 6px 14px;
+    font-size: 13px; display: flex; gap: 6px; align-items: center;
+  }
+  .stat-pill .val { font-weight: 600; color: var(--accent); }
+
+  /* Final summary */
+  .summary-card {
+    background: linear-gradient(135deg, #1a2a1a 0%, #1a1d27 100%);
+    border: 1px solid var(--green); border-radius: 12px; padding: 24px;
+    margin-top: 20px; display: none;
+  }
+  .summary-card h2 { color: var(--green); font-size: 20px; margin-bottom: 16px; }
+
+  /* Log */
+  #logBox {
+    background: #0a0c10; border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; margin-top: 20px; max-height: 200px; overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 12px;
+    color: var(--text2); display: none;
+  }
+  .log-entry { margin-bottom: 4px; }
+  .log-time { color: var(--accent); }
+
+  .hidden { display: none; }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .pulsing { animation: pulse 1.5s infinite; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1><span>&#x1F6E1;</span> Zero-Day Attack Detection <span>— Live Dashboard</span></h1>
+    <div class="subtitle">Graph-Based Self-Supervised Learning Pipeline</div>
+  </div>
+  <button id="startBtn" onclick="startPipeline()">▶ Run Pipeline</button>
+</div>
+
+<div class="container">
+  <!-- Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="label">Pipeline Progress</div>
+    <div class="progress-track"><div class="progress-fill" id="mainProgress"></div></div>
+    <div class="progress-text" id="progressLabel">Ready to start</div>
+  </div>
+
+  <!-- Steps -->
+  <div id="stepsContainer">
+    <div class="step-card" id="step1">
+      <div class="step-header"><div class="step-num">1</div><div class="step-title">Collect Normal System Events</div></div>
+      <div class="step-desc">Monitor processes, files & network to learn normal behavior</div>
+      <div class="step-content hidden" id="step1Content"></div>
+    </div>
+    <div class="step-card" id="step2">
+      <div class="step-header"><div class="step-num">2</div><div class="step-title">Build Behavioral Graphs</div></div>
+      <div class="step-desc">Convert events into time-windowed heterogeneous graphs</div>
+      <div class="step-content hidden" id="step2Content"></div>
+    </div>
+    <div class="step-card" id="step3">
+      <div class="step-header"><div class="step-num">3</div><div class="step-title">Train Graph Autoencoder</div></div>
+      <div class="step-desc">Self-supervised learning of normal behavior patterns</div>
+      <div class="step-content hidden" id="step3Content"></div>
+    </div>
+    <div class="step-card" id="step4">
+      <div class="step-header"><div class="step-num">4</div><div class="step-title">Continual Learning Adaptation</div></div>
+      <div class="step-desc">Online adaptation with replay before behavioral graph analysis</div>
+      <div class="step-content hidden" id="step4Content"></div>
+    </div>
+    <div class="step-card" id="step5">
+      <div class="step-header"><div class="step-num">5</div><div class="step-title">Collect &amp; Test Real Data</div></div>
+      <div class="step-desc">Monitor new activity and run detection on real data</div>
+      <div class="step-content hidden" id="step5Content"></div>
+    </div>
+    <div class="step-card" id="step6">
+      <div class="step-header"><div class="step-num">6</div><div class="step-title">Execute Real Attacks (Sandbox)</div></div>
+      <div class="step-desc">Run real attack scenarios in a safe sandbox — track file impacts</div>
+      <div class="step-content hidden" id="step6Content"></div>
+    </div>
+    <div class="step-card" id="step7">
+      <div class="step-header"><div class="step-num">7</div><div class="step-title">Detect &amp; Prevent Attacks</div></div>
+      <div class="step-desc">Score attack graphs, show file impacts &amp; prevention status</div>
+      <div class="step-content hidden" id="step7Content"></div>
+    </div>
+    <div class="step-card" id="step8">
+      <div class="step-header"><div class="step-num">8</div><div class="step-title">Compute Metrics</div></div>
+      <div class="step-desc">Precision, Recall, F1, ROC Curve &amp; AUC</div>
+      <div class="step-content hidden" id="step8Content"></div>
+    </div>
+    <div class="step-card" id="step9">
+      <div class="step-header"><div class="step-num">9</div><div class="step-title">Visualizations</div></div>
+      <div class="step-desc">Generate behavioral graph views and comparisons</div>
+      <div class="step-content hidden" id="step9Content"></div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-card" id="summaryCard">
+    <h2>&#x2705; Pipeline Complete</h2>
+    <div class="metrics-grid" id="summaryMetrics"></div>
+  </div>
+
+  <!-- Event Log -->
+  <div id="logBox"></div>
+</div>
+
+<script>
+const TOTAL_STEPS = 9;
+let completedSteps = 0;
+let evtSource = null;
+
+function resetUI() {
+  completedSteps = 0;
+  document.getElementById("mainProgress").style.width = "0%";
+  document.getElementById("progressLabel").textContent = "Starting pipeline...";
+  document.getElementById("summaryCard").style.display = "none";
+  document.getElementById("logBox").style.display = "block";
+  document.getElementById("logBox").innerHTML = "";
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const card = document.getElementById("step" + i);
+    card.className = "step-card";
+    const content = document.getElementById("step" + i + "Content");
+    content.innerHTML = "";
+    content.classList.add("hidden");
+  }
+}
+
+function connectSSE() {
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource("/stream");
+  evtSource.onmessage = (e) => handleEvent(JSON.parse(e.data));
+  evtSource.onerror = () => {
+    const btn = document.getElementById("startBtn");
+    btn.disabled = false;
+    btn.textContent = "▶ Run Pipeline";
+  };
+}
+
+function startPipeline() {
+  const btn = document.getElementById("startBtn");
+  btn.disabled = true;
+  btn.textContent = "⏳ Running...";
+  resetUI();
+
+  fetch("/start", { method: "POST" })
+    .then(r => r.json())
+    .then(() => connectSSE())
+    .catch(() => {
+      btn.disabled = false;
+      btn.textContent = "▶ Run Pipeline";
+    });
+}
+
+// On page load: check if pipeline is running and replay history 
+window.addEventListener("DOMContentLoaded", () => {
+  fetch("/status").then(r => r.json()).then(s => {
+    if (s.running) {
+      const btn = document.getElementById("startBtn");
+      btn.disabled = true;
+      btn.textContent = "⏳ Running...";
+      document.getElementById("logBox").style.display = "block";
+      // Replay all past events, then connect for live ones
+      fetch("/history").then(r => r.json()).then(events => {
+        events.forEach(evt => handleEvent(evt));
+        connectSSE();
+      });
+    }
+  });
+});
+
+function handleEvent(evt) {
+  addLog(evt.time, evt.type, evt.data);
+
+  switch (evt.type) {
+    case "step_start": onStepStart(evt.data); break;
+    case "step_complete": onStepComplete(evt.data); break;
+    case "collection_progress": onCollectionProgress(evt.data); break;
+    case "training_progress": onTrainingProgress(evt.data); break;
+    case "cl_progress": onCLProgress(evt.data); break;
+    case "attack_progress": onAttackProgress(evt.data); break;
+    case "pipeline_complete": onPipelineComplete(evt.data); break;
+    case "error": onError(evt.data); break;
+  }
+}
+
+function onStepStart(d) {
+  const card = document.getElementById("step" + d.step);
+  card.className = "step-card active";
+  const content = document.getElementById("step" + d.step + "Content");
+  content.classList.remove("hidden");
+  content.innerHTML = `<div class="sub-progress" id="subProgress${d.step}">
+    <div class="sub-track"><div class="sub-fill" id="subFill${d.step}" style="width:0%"></div></div>
+    <div class="sub-label pulsing" id="subLabel${d.step}">Starting...</div>
+  </div>`;
+  updateMainProgress();
+}
+
+function onStepComplete(d) {
+  const card = document.getElementById("step" + d.step);
+  card.className = "step-card done";
+  completedSteps = d.step;
+  updateMainProgress();
+
+  const content = document.getElementById("step" + d.step + "Content");
+  const r = d.result;
+
+  switch (d.step) {
+    case 1:
+      let evtHtml = `<div class="stats-row"><div class="stat-pill"><span>Events:</span><span class="val">${r.event_count}</span></div></div>`;
+      if (r.sample_events && r.sample_events.length) {
+        evtHtml += `<table class="data-table"><tr><th>Process</th><th>Syscall</th><th>Target</th></tr>`;
+        r.sample_events.forEach(e => {
+          evtHtml += `<tr><td>${esc(e.process)}</td><td>${esc(e.syscall)}</td><td>${esc(e.target)}</td></tr>`;
+        });
+        evtHtml += `</table>`;
+      }
+      content.innerHTML = evtHtml;
+      break;
+
+    case 2:
+      let gHtml = `<div class="stats-row"><div class="stat-pill"><span>Graphs:</span><span class="val">${r.graph_count}</span></div></div>`;
+      if (r.graphs && r.graphs.length) {
+        gHtml += `<table class="data-table"><tr><th>#</th><th>Nodes</th><th>Edges</th><th>Processes</th><th>Files</th><th>Sockets</th></tr>`;
+        r.graphs.forEach(g => {
+          gHtml += `<tr><td>${g.id}</td><td>${g.nodes}</td><td>${g.edges}</td><td>${g.processes}</td><td>${g.files}</td><td>${g.sockets}</td></tr>`;
+        });
+        gHtml += `</table>`;
+      }
+      if (r.graph_image) gHtml += `<img class="viz-img" src="data:image/png;base64,${r.graph_image}">`;
+      content.innerHTML = gHtml;
+      break;
+
+    case 3:
+      let tHtml = `<div class="metrics-grid">
+        <div class="metric-box"><div class="metric-value">${r.epochs}</div><div class="metric-label">Epochs</div></div>
+        <div class="metric-box"><div class="metric-value">${r.mean_loss}</div><div class="metric-label">Mean Score</div></div>
+        <div class="metric-box"><div class="metric-value">${r.std_loss}</div><div class="metric-label">Std Dev</div></div>
+        <div class="metric-box"><div class="metric-value">${r.threshold}</div><div class="metric-label">Threshold</div></div>
+      </div>`;
+      if (r.loss_image) tHtml += `<img class="viz-img" src="data:image/png;base64,${r.loss_image}">`;
+      content.innerHTML = tHtml;
+      break;
+
+    case 4:
+      let clHtml = `<div class="stats-row">
+        <div class="stat-pill"><span>Chunks:</span><span class="val">${r.chunks_processed}</span></div>
+        <div class="stat-pill"><span>Replay Memory:</span><span class="val">${r.memory_size}</span></div>
+        <div class="stat-pill"><span>Mean CL Loss:</span><span class="val">${r.mean_chunk_loss}</span></div>
+      </div>`;
+      content.innerHTML = clHtml;
+      break;
+
+    case 5:
+      let dHtml = `<div class="stats-row">
+        <div class="stat-pill"><span>Events:</span><span class="val">${r.event_count}</span></div>
+        <div class="stat-pill"><span>Graphs:</span><span class="val">${r.graph_count}</span></div>
+      </div>`;
+      if (r.detections && r.detections.length) {
+        dHtml += `<table class="data-table"><tr><th>Graph</th><th>Score</th><th>Threshold</th><th>Status</th></tr>`;
+        r.detections.forEach(det => {
+          const badge = det.status === "ANOMALY" ? "badge-anomaly" : "badge-normal";
+          dHtml += `<tr><td>#${det.graph}</td><td>${det.score}</td><td>${det.threshold}</td><td><span class="badge ${badge}">${det.status}</span></td></tr>`;
+        });
+        dHtml += `</table>`;
+      }
+      content.innerHTML = dHtml;
+      break;
+
+    case 6:
+      let aHtml = `<div class="stats-row"><div class="stat-pill"><span>Total Graphs:</span><span class="val">${r.total_graphs}</span></div></div>`;
+      if (r.attacks) {
+        aHtml += `<table class="data-table"><tr><th>Attack Type</th><th>Events</th><th>Graphs</th></tr>`;
+        r.attacks.forEach(a => {
+          aHtml += `<tr><td>🔴 ${esc(a.name)}</td><td>${a.events}</td><td>${a.graphs}</td></tr>`;
+        });
+        aHtml += `</table>`;
+      }
+      // Real attack reports with file impacts
+      if (r.attack_reports && r.attack_reports.length) {
+        aHtml += `<div class="impact-section"><h4>🔬 Real Attack File Impact Report</h4>`;
+        r.attack_reports.forEach(rpt => {
+          aHtml += `<div class="prevention-card">`;
+          aHtml += `<div class="atk-name">🔴 ${esc(rpt.attack_name)} <span class="badge badge-mitre">${esc(rpt.mitre_technique)}</span></div>`;
+          aHtml += `<div style="color:var(--text2);font-size:12px">${esc(rpt.description)}</div>`;
+          aHtml += `<div class="prevention-stats">`;
+          aHtml += `<div class="stat-pill"><span>Duration:</span><span class="val">${rpt.duration_ms}ms</span></div>`;
+          aHtml += `<div class="stat-pill"><span>Files Hit:</span><span class="val">${rpt.files_impacted}</span></div>`;
+          aHtml += `<div class="stat-pill"><span>Events:</span><span class="val">${rpt.events_generated}</span></div>`;
+          aHtml += `</div>`;
+          if (rpt.impacts && rpt.impacts.length) {
+            aHtml += `<table class="impact-table"><tr><th>File</th><th>SHA Status</th><th>SHA Before</th><th>SHA After</th><th>Before</th><th>After</th></tr>`;
+            rpt.impacts.forEach(imp => {
+              aHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
+            });
+            aHtml += `</table>`;
+          }
+          aHtml += `</div>`;
+        });
+        aHtml += `</div>`;
+      }
+      content.innerHTML = aHtml;
+      break;
+
+    case 7:
+      let rHtml = "";
+      if (r.detections && r.detections.length) {
+        rHtml = `<table class="data-table"><tr><th>#</th><th>Attack Type</th><th>Score</th><th>Status</th><th>Severity</th></tr>`;
+        r.detections.forEach(det => {
+          const badge = det.status === "ANOMALY" ? "badge-anomaly" : "badge-normal";
+          const sevBadge = det.severity ? `badge-${det.severity.toLowerCase()}` : "";
+          rHtml += `<tr><td>${det.id}</td><td>${esc(det.attack_type)}</td><td>${det.score}</td>
+            <td><span class="badge ${badge}">${det.status}</span></td>
+            <td>${det.severity ? `<span class="badge ${sevBadge}">${det.severity}</span>` : "-"}</td></tr>`;
+        });
+        rHtml += `</table>`;
+      }
+      // Prevention reports
+      if (r.prevention_reports && r.prevention_reports.length) {
+        rHtml += `<div class="impact-section" style="margin-top:20px"><h4>🛡️ Attack Prevention Report</h4>`;
+        r.prevention_reports.forEach(p => {
+          const statusBadge = p.detected ? "badge-detected" : "badge-missed";
+          rHtml += `<div class="prevention-card">`;
+          rHtml += `<div class="atk-name">${esc(p.attack_name)} <span class="badge badge-mitre">${esc(p.mitre)}</span> <span class="badge ${statusBadge}">${esc(p.status)}</span></div>`;
+          rHtml += `<div class="prevention-stats">`;
+          rHtml += `<div class="stat-pill"><span>Duration:</span><span class="val">${p.duration_ms}ms</span></div>`;
+          rHtml += `<div class="stat-pill"><span>Processes:</span><span class="val">${p.processes ? p.processes.length : 0}</span></div>`;
+          rHtml += `<div class="stat-pill"><span>Network:</span><span class="val">${p.network ? p.network.length : 0}</span></div>`;
+          rHtml += `</div>`;
+          if (p.impacts && p.impacts.length) {
+            rHtml += `<table class="impact-table"><tr><th>Affected File</th><th>SHA Status</th><th>SHA Before</th><th>SHA After</th><th>Size Before</th><th>Size After</th></tr>`;
+            p.impacts.forEach(imp => {
+              rHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
+            });
+            rHtml += `</table>`;
+          }
+          if (p.detected) {
+            rHtml += `<div style="margin-top:8px;padding:8px 12px;background:rgba(0,230,118,0.08);border-radius:6px;font-size:12px;color:var(--green)">✅ System detected this attack through anomalous graph reconstruction error and structural features. Alert generated and attack flagged for quarantine.</div>`;
+          } else {
+            rHtml += `<div style="margin-top:8px;padding:8px 12px;background:rgba(255,82,82,0.08);border-radius:6px;font-size:12px;color:var(--red)">⚠️ Attack was not detected — model may need retraining with similar patterns.</div>`;
+          }
+          rHtml += `</div>`;
+        });
+        rHtml += `</div>`;
+      }
+      content.innerHTML = rHtml;
+      break;
+
+    case 8:
+      let mHtml = `<div class="metrics-grid">
+        <div class="metric-box"><div class="metric-value" style="color:var(--green)">${r.precision}%</div><div class="metric-label">Precision</div></div>
+        <div class="metric-box"><div class="metric-value" style="color:var(--green)">${r.recall}%</div><div class="metric-label">Recall</div></div>
+        <div class="metric-box"><div class="metric-value" style="color:var(--accent)">${r.f1}%</div><div class="metric-label">F1 Score</div></div>
+        <div class="metric-box"><div class="metric-value" style="color:var(--accent)">${r.accuracy}%</div><div class="metric-label">Accuracy</div></div>
+        <div class="metric-box"><div class="metric-value">${r.auc}</div><div class="metric-label">AUC</div></div>
+      </div>
+      <div class="stats-row" style="margin-top:12px">
+        <div class="stat-pill"><span>TP:</span><span class="val">${r.tp}</span></div>
+        <div class="stat-pill"><span>FP:</span><span class="val">${r.fp}</span></div>
+        <div class="stat-pill"><span>FN:</span><span class="val">${r.fn}</span></div>
+        <div class="stat-pill"><span>TN:</span><span class="val">${r.tn}</span></div>
+      </div>`;
+      if (r.cm_image) mHtml += `<div class="viz-title">Confusion Matrix</div><img class="viz-img" src="data:image/png;base64,${r.cm_image}" style="max-width:350px">`;
+      if (r.metrics_image) mHtml += `<div class="viz-title">ROC Curve & Score Distribution</div><img class="viz-img" src="data:image/png;base64,${r.metrics_image}">`;
+      content.innerHTML = mHtml;
+      break;
+
+    case 9:
+      let vHtml = "";
+      if (r.visualizations) {
+        r.visualizations.forEach(v => {
+          vHtml += `<div class="viz-title">${esc(v.title)}</div><img class="viz-img" src="data:image/png;base64,${v.image}">`;
+        });
+      }
+      content.innerHTML = vHtml;
+      break;
+  }
+}
+
+function onCollectionProgress(d) {
+  // Find current active step
+  const activeCards = document.querySelectorAll(".step-card.active");
+  if (!activeCards.length) return;
+  const stepId = activeCards[0].id.replace("step", "");
+  const fill = document.getElementById("subFill" + stepId);
+  const label = document.getElementById("subLabel" + stepId);
+  if (fill) fill.style.width = d.percent + "%";
+  if (label) { label.textContent = `${d.events} events (${d.elapsed}s / ${d.total}s)`; label.classList.remove("pulsing"); }
+}
+
+function onTrainingProgress(d) {
+  const fill = document.getElementById("subFill3");
+  const label = document.getElementById("subLabel3");
+  if (fill) fill.style.width = d.percent + "%";
+  if (label) { label.textContent = `Epoch ${d.epoch}/${d.total_epochs} — Loss: ${d.loss}`; label.classList.remove("pulsing"); }
+}
+// \u2500\u2500 Continual Learning live progress \u2500\u2500
+function onCLProgress(d) {
+  const content = document.getElementById("step4Content");
+  if (!content) return;
+
+  // Ensure live feed container exists
+  let feed = document.getElementById("clLiveFeed");
+  if (!feed) {
+    content.innerHTML = `
+      <div class="sub-progress" id="subProgress4">
+        <div class="sub-track"><div class="sub-fill" id="subFill4" style="width:0%"></div></div>
+        <div class="sub-label" id="subLabel4">Adapting...</div>
+      </div>
+      <div class="live-feed" id="clLiveFeed"></div>
+    `;
+    feed = document.getElementById("clLiveFeed");
+  }
+
+  const line = document.createElement("div");
+  line.className = "feed-line";
+
+  if (d.phase === "chunk_start") {
+    const pct = Math.round((d.chunk / d.total_chunks) * 100);
+    const fill = document.getElementById("subFill4");
+    const label = document.getElementById("subLabel4");
+    if (fill) fill.style.width = pct + "%";
+    if (label) label.textContent = `Chunk ${d.chunk}/${d.total_chunks}`;
+    line.innerHTML = `<span class="feed-phase">\u25B6 Chunk ${d.chunk}/${d.total_chunks}</span>
+      <span class="feed-detail">Processing <span class="feed-value">${d.new_graphs}</span> new graph(s) + <span class="feed-value">${d.replay_graphs}</span> replay sample(s) from memory</span>`;
+  } else if (d.phase === "epoch") {
+    line.innerHTML = `<span style="padding-left:16px">\u2514\u2500 Epoch ${d.epoch}/2 \u2014 loss: <span class="feed-loss">${d.loss}</span></span>`;
+  } else if (d.phase === "chunk_done") {
+    line.innerHTML = `<span style="padding-left:16px;color:var(--green)">\u2714 Chunk ${d.chunk} complete \u2014 avg loss: <span class="feed-loss">${d.chunk_loss}</span> &nbsp;|&nbsp; Memory: <span class="feed-value">${d.memory_size}</span> graphs</span>`;
+  }
+
+  feed.appendChild(line);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// \u2500\u2500 Attack execution live progress \u2500\u2500
+function onAttackProgress(d) {
+  const content = document.getElementById("step6Content");
+  if (!content) return;
+
+  // Ensure live feed container exists
+  let feed = document.getElementById("atkLiveFeed");
+  if (!feed) {
+    content.innerHTML = `
+      <div class="sub-progress" id="subProgress6">
+        <div class="sub-track"><div class="sub-fill" id="subFill6" style="width:0%"></div></div>
+        <div class="sub-label" id="subLabel6">Preparing sandbox...</div>
+      </div>
+      <div class="live-feed" id="atkLiveFeed"></div>
+    `;
+    feed = document.getElementById("atkLiveFeed");
+  }
+
+  const line = document.createElement("div");
+  line.className = "feed-line";
+
+  if (d.phase === "sandbox_ready") {
+    line.innerHTML = `<span class="feed-phase">\uD83D\uDCC1 Sandbox Ready</span>
+      <span class="feed-detail">${esc(d.detail)}</span>`;
+    // List seed files
+    if (d.seed_files) {
+      let fileList = d.seed_files.map(f => `<div class="feed-file" style="padding-left:20px">\u251C\u2500 ${esc(f)}</div>`).join('');
+      line.innerHTML += fileList;
+    }
+  } else if (d.phase === "attack_start") {
+    const pct = Math.round(((d.attack_index + 1) / d.total_attacks) * 50);
+    const fill = document.getElementById("subFill6");
+    const label = document.getElementById("subLabel6");
+    if (fill) fill.style.width = pct + "%";
+    if (label) label.textContent = `Attack ${d.attack_index + 1}/${d.total_attacks}: ${d.attack_name}`;
+    line.innerHTML = `<div class="atk-live-card" id="atkCard${d.attack_index}">
+      <div class="atk-live-header">
+        <span class="atk-live-name">\uD83D\uDD34 ${esc(d.attack_name)}</span>
+        <span class="badge badge-mitre">${esc(d.mitre)}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">${esc(d.description)}</div>
+      <div class="atk-live-stages" id="atkStages${d.attack_index}"></div>
+    </div>`;
+  } else if (d.phase === "attack_stage") {
+    // Append stage to the attack card
+    let stagesDiv = document.getElementById("atkStages" + d.attack_index);
+    if (stagesDiv) {
+      const stageLine = document.createElement("div");
+      stageLine.className = "atk-stage-line";
+      stageLine.innerHTML = `<span class="stage-icon">\u2192</span> <span class="feed-stage">${esc(d.stage)}</span>: ${esc(d.detail)}`;
+      stagesDiv.appendChild(stageLine);
+    }
+    return; // Don't add to main feed, it's inside the card
+  } else if (d.phase === "attack_done") {
+    const pct = Math.round(((d.attack_index + 1) / 4) * 100);
+    const fill = document.getElementById("subFill6");
+    if (fill) fill.style.width = pct + "%";
+    // Add summary to the attack card
+    let stagesDiv = document.getElementById("atkStages" + d.attack_index);
+    if (stagesDiv) {
+      const summary = document.createElement("div");
+      summary.className = "prevention-stats";
+      summary.style.marginTop = "8px";
+      summary.innerHTML = `
+        <div class="stat-pill"><span>Events:</span><span class="val">${d.events}</span></div>
+        <div class="stat-pill"><span>Files Hit:</span><span class="val">${d.files_impacted}</span></div>
+        <div class="stat-pill"><span>Duration:</span><span class="val">${d.duration_ms}ms</span></div>
+      `;
+      stagesDiv.appendChild(summary);
+      // Show individual file impacts
+      if (d.impacts && d.impacts.length) {
+        let impHtml = '<table class="impact-table" style="margin-top:6px"><tr><th>File</th><th>SHA Status</th><th>SHA Before</th><th>SHA After</th><th>Before</th><th>After</th></tr>';
+        d.impacts.forEach(imp => {
+          impHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
+        });
+        impHtml += '</table>';
+        stagesDiv.insertAdjacentHTML('beforeend', impHtml);
+      }
+    }
+    return;
+  }
+
+  feed.appendChild(line);
+  feed.scrollTop = feed.scrollHeight;
+}
+function onPipelineComplete(d) {
+  const btn = document.getElementById("startBtn");
+  btn.disabled = false;
+  btn.textContent = "▶ Run Again";
+
+  document.getElementById("mainProgress").style.width = "100%";
+  document.getElementById("progressLabel").textContent = `Pipeline complete in ${d.elapsed}s`;
+
+  const summary = document.getElementById("summaryCard");
+  summary.style.display = "block";
+  document.getElementById("summaryMetrics").innerHTML = `
+    <div class="metric-box"><div class="metric-value">${d.train_events + d.test_events}</div><div class="metric-label">Total Events</div></div>
+    <div class="metric-box"><div class="metric-value">${d.train_graphs + d.test_graphs + d.attack_graphs}</div><div class="metric-label">Graphs Built</div></div>
+    <div class="metric-box"><div class="metric-value" style="color:var(--green)">${d.recall}%</div><div class="metric-label">Recall</div></div>
+    <div class="metric-box"><div class="metric-value" style="color:var(--green)">${d.precision}%</div><div class="metric-label">Precision</div></div>
+    <div class="metric-box"><div class="metric-value" style="color:var(--accent)">${d.f1}%</div><div class="metric-label">F1 Score</div></div>
+    <div class="metric-box"><div class="metric-value">${d.auc}</div><div class="metric-label">AUC</div></div>
+  `;
+  summary.scrollIntoView({ behavior: "smooth" });
+  if (evtSource) { evtSource.close(); evtSource = null; }
+}
+
+function onError(d) {
+  const btn = document.getElementById("startBtn");
+  btn.disabled = false;
+  btn.textContent = "▶ Run Pipeline";
+  addLog("", "ERROR", d);
+  if (evtSource) { evtSource.close(); evtSource = null; }
+}
+
+function updateMainProgress() {
+  const pct = Math.round((completedSteps / TOTAL_STEPS) * 100);
+  document.getElementById("mainProgress").style.width = pct + "%";
+  document.getElementById("progressLabel").textContent = `Step ${completedSteps} of ${TOTAL_STEPS} complete (${pct}%)`;
+}
+
+function addLog(time, type, data) {
+  const box = document.getElementById("logBox");
+  const entry = document.createElement("div");
+  entry.className = "log-entry";
+  let msg = typeof data === "object" ? (data.message || data.title || JSON.stringify(data).slice(0, 120)) : data;
+  entry.innerHTML = `<span class="log-time">[${time || "—"}]</span> <span style="color:${type === "error" ? "var(--red)" : "var(--text2)"}">${type}</span> ${esc(msg)}`;
+  box.appendChild(entry);
+  box.scrollTop = box.scrollHeight;
+}
+
+function esc(s) { if (!s) return ""; const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "session_id": "20260210_213000",
+  "timestamp": "2026-02-10T21:31:02.394169",
+  "total_graphs": 5,
+  "total_anomalies": 5,
+  "results": [
+    {
+      "graph_id": "graph_1770739242164",
+      "anomaly_score": 149.673929,
+      "threshold": 2.5,
+      "is_anomalous": 

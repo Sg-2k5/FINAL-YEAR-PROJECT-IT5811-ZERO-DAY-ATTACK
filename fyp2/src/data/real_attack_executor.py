@@ -57,6 +57,9 @@ class FileImpact:
     permissions_after: str = ""
     integrity_status: str = "UNCHANGED"
     affected_by_sha: bool = False
+    av_engine: str = "ClamAV"
+    av_status: str = "NOT_SCANNED"
+    av_signature: str = ""
     change_summary: str = ""
 
 
@@ -95,6 +98,9 @@ class AttackReport:
                     "sha_after": fi.hash_after,
                     "sha_status": fi.integrity_status,
                     "affected": fi.affected_by_sha,
+                    "av_engine": fi.av_engine,
+                    "av_status": fi.av_status,
+                    "av_signature": fi.av_signature,
                     "change": fi.change_summary,
                     "size_before": fi.size_before,
                     "size_after": fi.size_after,

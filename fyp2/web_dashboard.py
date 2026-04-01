@@ -43,6 +43,7 @@ from src.detection.enhanced_detector import HybridDetector
 from src.detection.detector import AlertManager
 from src.visualization.graph_visualizer import GraphVisualizer
 from src.utils.alert_logger import AlertLogger
+from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av
 
 app = Flask(__name__)
 
@@ -195,7 +196,27 @@ def run_pipeline_thread():
 
         builder = GraphBuilder(window_size_seconds=5, min_events_per_graph=1,
                                max_nodes_per_graph=500, filter_system_noise=False)
+
+        # Graph building intermediate steps
+        send_event("graph_build_step", {"phase": "init", "detail": f"Starting graph construction from {len(train_events)} collected events"})
+        time.sleep(0.3)
+
+        send_event("graph_build_step", {"phase": "partition", "detail": f"Partitioning events into {builder.window_size_seconds}s time windows..."})
+        time.sleep(0.2)
+
+        send_event("graph_build_step", {"phase": "nodes", "detail": "Extracting process & resource nodes from events (PROCESS, FILE, SOCKET node types)"})
+        time.sleep(0.2)
+
+        send_event("graph_build_step", {"phase": "edges", "detail": "Creating edges from syscalls (EXECUTES, READS, WRITES, SPAWNS, CONNECTS)"})
+        time.sleep(0.2)
+
+        send_event("graph_build_step", {"phase": "features", "detail": "Computing 6D node features: type encoding (3) + in/out degree (2) + temporal activity (1)"})
+        time.sleep(0.2)
+
         train_graphs = build_graphs(builder, train_events)
+
+        send_event("graph_build_step", {"phase": "complete", "detail": f"Graph construction complete — {len(train_graphs)} graphs built"})
+        time.sleep(0.2)
 
         graph_info = []
         for i, g in enumerate(train_graphs[:5], 1):
@@ -246,6 +267,30 @@ def run_pipeline_thread():
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
         epochs = 30
+
+        # GCN architecture walk-through — shown once before training starts
+        send_event("gcn_substep", {"phase": "arch_init",
+            "detail": f"Model ready: {len(train_data)} training graph(s) | {epochs} epochs | lr=0.01 | input 6D"})
+        time.sleep(0.3)
+        send_event("gcn_substep", {"phase": "arch_l1",
+            "detail": "GCN Conv1: each node aggregates 1-hop neighbour features → 32D hidden repr  +  ReLU  +  Dropout(0.2)"})
+        time.sleep(0.2)
+        send_event("gcn_substep", {"phase": "arch_l2",
+            "detail": "GCN Conv2: 32D hidden → 16D latent embedding Z  (compact graph representation)"})
+        time.sleep(0.2)
+        send_event("gcn_substep", {"phase": "arch_decode",
+            "detail": "Inner Product Decoder: Â_ij = sigmoid(Zᵢ · Zⱼ)  →  reconstruct full adjacency matrix"})
+        time.sleep(0.2)
+        send_event("gcn_substep", {"phase": "arch_loss",
+            "detail": "Loss: MSE(Â, A_true)  —  no labels used, purely self-supervised on normal behaviour"})
+        time.sleep(0.2)
+        send_event("gcn_substep", {"phase": "arch_optim",
+            "detail": "Optimizer: Adam  —  backpropagates gradients to update Conv1 + Conv2 weights each epoch"})
+        time.sleep(0.2)
+        send_event("gcn_substep", {"phase": "training_start",
+            "detail": f"Starting training loop — {epochs} epochs..."})
+        time.sleep(0.2)
+
         loss_history = []
         for epoch in range(epochs):
             model.train()
@@ -271,6 +316,9 @@ def run_pipeline_thread():
         print()  # newline after progress
 
         # Compute baseline stats
+        send_event("gcn_substep", {"phase": "stats_compute",
+            "detail": f"Training complete — computing baseline anomaly scores on all {len(train_data)} training graph(s)..."})
+        time.sleep(0.3)
         model.eval()
         losses = []
         with torch.no_grad():
@@ -282,6 +330,9 @@ def run_pipeline_thread():
         if std_loss < 1e-6:
             std_loss = 1e-6
         threshold = mean_loss + 3 * std_loss
+        send_event("gcn_substep", {"phase": "stats_done",
+            "detail": f"Baseline fixed: μ = {round(mean_loss,6)},  σ = {round(std_loss,6)}  →  detection threshold = μ + 3σ = {round(threshold,6)}"})
+        time.sleep(0.2)
 
         # Loss curve image
         fig, ax = plt.subplots(figsize=(8, 4))
@@ -333,7 +384,23 @@ def run_pipeline_thread():
                 "new_graphs": chunk_size,
                 "replay_graphs": replay_size,
             })
-            time.sleep(0.6)
+            time.sleep(0.4)
+            mem_now = len(continual.memory_graphs)
+            send_event("cl_progress", {
+                "phase": "sampling",
+                "chunk": chunk_idx + 1,
+                "replay_graphs": replay_size,
+                "memory_total": mem_now,
+                "detail": f"Randomly sampled {replay_size} graph(s) from memory bank  ({mem_now} stored)"
+            })
+            time.sleep(0.2)
+            send_event("cl_progress", {
+                "phase": "combining",
+                "chunk": chunk_idx + 1,
+                "total_batch": chunk_size + replay_size,
+                "detail": f"Training batch: {chunk_size} new  +  {replay_size} replay  =  {chunk_size + replay_size} total"
+            })
+            time.sleep(0.2)
 
         def _cl_epoch_done(chunk_idx, epoch, loss):
             tprint(f"    Epoch {epoch+1}/2  loss={loss:.6f}", DIM)
@@ -347,6 +414,14 @@ def run_pipeline_thread():
 
         def _cl_chunk_done(chunk_idx, chunk_loss, mem_size):
             tprint(f"  ✓ Chunk {chunk_idx} done — loss={chunk_loss:.6f}, memory={mem_size}", DIM)
+            send_event("cl_progress", {
+                "phase": "memory_update",
+                "chunk": chunk_idx,
+                "memory_size": mem_size,
+                "memory_capacity": 64,
+                "detail": f"Memory bank updated — {mem_size}/64 graphs stored (oldest evicted when over capacity)"
+            })
+            time.sleep(0.2)
             send_event("cl_progress", {
                 "phase": "chunk_done",
                 "chunk": chunk_idx,
@@ -437,10 +512,14 @@ def run_pipeline_thread():
 
         executor = RealAttackExecutor(sandbox_base=str(Path(__file__).parent))
         sandbox_path = executor.setup()
+        av_scanner = ClamAVScanner()
         tprint(f"Sandbox ready: {sandbox_path}", DIM)
         send_event("attack_progress", {
             "phase": "sandbox_ready",
-            "detail": f"Sandbox created with {len(SandboxManager.SEED_FILES)} realistic files",
+            "detail": (
+                f"Sandbox created with {len(SandboxManager.SEED_FILES)} realistic files | "
+                f"ClamAV: {'available' if av_scanner.available else 'not found'}"
+            ),
             "seed_files": list(SandboxManager.SEED_FILES.keys()),
         })
         time.sleep(0.8)
@@ -470,6 +549,7 @@ def run_pipeline_thread():
             time.sleep(0.5)
 
         def _atk_done(idx, rpt):
+            annotate_attack_reports_with_av([rpt], Path(sandbox_path), scanner=av_scanner)
             tprint(f"  {GREEN}✓ {rpt.attack_name}{RESET}: {rpt.events_generated} events, {len(rpt.files_impacted)} files impacted ({rpt.duration_ms:.0f}ms)", DIM)
             send_event("attack_progress", {
                 "phase": "attack_done",
@@ -487,6 +567,9 @@ def run_pipeline_thread():
                      "sha_after": fi.hash_after,
                      "sha_status": fi.integrity_status,
                      "affected": fi.affected_by_sha,
+                     "av_engine": fi.av_engine,
+                     "av_status": fi.av_status,
+                     "av_signature": fi.av_signature,
                      "size_before": fi.size_before,
                      "size_after": fi.size_after}
                     for fi in rpt.files_impacted
@@ -499,6 +582,9 @@ def run_pipeline_thread():
             on_stage=_atk_stage,
             on_attack_done=_atk_done,
         )
+
+        # Ensure every report has AV scan metadata for step summaries.
+        annotate_attack_reports_with_av(attack_reports, Path(sandbox_path), scanner=av_scanner)
 
         # Also generate simulated events for graph building
         simulator = EnhancedAttackSimulator()
@@ -586,6 +672,9 @@ def run_pipeline_thread():
                      "sha_after": fi.hash_after,
                      "sha_status": fi.integrity_status,
                      "affected": fi.affected_by_sha,
+                     "av_engine": fi.av_engine,
+                     "av_status": fi.av_status,
+                     "av_signature": fi.av_signature,
                      "size_before": fi.size_before,
                      "size_after": fi.size_after}
                     for fi in rpt.files_impacted

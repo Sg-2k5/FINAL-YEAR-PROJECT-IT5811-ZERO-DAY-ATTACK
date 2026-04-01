@@ -364,7 +364,9 @@ function handleEvent(evt) {
     case "step_start": onStepStart(evt.data); break;
     case "step_complete": onStepComplete(evt.data); break;
     case "collection_progress": onCollectionProgress(evt.data); break;
+    case "graph_build_step": onGraphBuildStep(evt.data); break;
     case "training_progress": onTrainingProgress(evt.data); break;
+    case "gcn_substep": onGCNSubstep(evt.data); break;
     case "cl_progress": onCLProgress(evt.data); break;
     case "attack_progress": onAttackProgress(evt.data); break;
     case "pipeline_complete": onPipelineComplete(evt.data); break;
@@ -380,7 +382,9 @@ function onStepStart(d) {
   content.innerHTML = `<div class="sub-progress" id="subProgress${d.step}">
     <div class="sub-track"><div class="sub-fill" id="subFill${d.step}" style="width:0%"></div></div>
     <div class="sub-label pulsing" id="subLabel${d.step}">Starting...</div>
-  </div>`;
+  </div>
+  <div id="step${d.step}Steps" class="step-intermediate"></div>
+  <div id="step${d.step}Results" class="step-results" style="margin-top:16px;"></div>`;
   updateMainProgress();
 }
 
@@ -390,104 +394,101 @@ function onStepComplete(d) {
   completedSteps = d.step;
   updateMainProgress();
 
-  const content = document.getElementById("step" + d.step + "Content");
+  const resultsContainer = document.getElementById("step" + d.step + "Results");
+  if (!resultsContainer) return;
   const r = d.result;
+
+  let resultsHtml = `<div style="border-top:1px solid var(--border);padding-top:12px;"><strong style="color:var(--green)">✓ Results:</strong></div>`;
 
   switch (d.step) {
     case 1:
-      let evtHtml = `<div class="stats-row"><div class="stat-pill"><span>Events:</span><span class="val">${r.event_count}</span></div></div>`;
+      resultsHtml += `<div class="stats-row"><div class="stat-pill"><span>Events:</span><span class="val">${r.event_count}</span></div></div>`;
       if (r.sample_events && r.sample_events.length) {
-        evtHtml += `<table class="data-table"><tr><th>Process</th><th>Syscall</th><th>Target</th></tr>`;
+        resultsHtml += `<table class="data-table"><tr><th>Process</th><th>Syscall</th><th>Target</th></tr>`;
         r.sample_events.forEach(e => {
-          evtHtml += `<tr><td>${esc(e.process)}</td><td>${esc(e.syscall)}</td><td>${esc(e.target)}</td></tr>`;
+          resultsHtml += `<tr><td>${esc(e.process)}</td><td>${esc(e.syscall)}</td><td>${esc(e.target)}</td></tr>`;
         });
-        evtHtml += `</table>`;
+        resultsHtml += `</table>`;
       }
-      content.innerHTML = evtHtml;
       break;
 
     case 2:
-      let gHtml = `<div class="stats-row"><div class="stat-pill"><span>Graphs:</span><span class="val">${r.graph_count}</span></div></div>`;
+      resultsHtml += `<div class="stats-row"><div class="stat-pill"><span>Graphs:</span><span class="val">${r.graph_count}</span></div></div>`;
       if (r.graphs && r.graphs.length) {
-        gHtml += `<table class="data-table"><tr><th>#</th><th>Nodes</th><th>Edges</th><th>Processes</th><th>Files</th><th>Sockets</th></tr>`;
+        resultsHtml += `<table class="data-table"><tr><th>#</th><th>Nodes</th><th>Edges</th><th>Processes</th><th>Files</th><th>Sockets</th></tr>`;
         r.graphs.forEach(g => {
-          gHtml += `<tr><td>${g.id}</td><td>${g.nodes}</td><td>${g.edges}</td><td>${g.processes}</td><td>${g.files}</td><td>${g.sockets}</td></tr>`;
+          resultsHtml += `<tr><td>${g.id}</td><td>${g.nodes}</td><td>${g.edges}</td><td>${g.processes}</td><td>${g.files}</td><td>${g.sockets}</td></tr>`;
         });
-        gHtml += `</table>`;
+        resultsHtml += `</table>`;
       }
-      if (r.graph_image) gHtml += `<img class="viz-img" src="data:image/png;base64,${r.graph_image}">`;
-      content.innerHTML = gHtml;
+      if (r.graph_image) resultsHtml += `<img class="viz-img" src="data:image/png;base64,${r.graph_image}">`;
       break;
 
     case 3:
-      let tHtml = `<div class="metrics-grid">
+      resultsHtml += `<div class="metrics-grid">
         <div class="metric-box"><div class="metric-value">${r.epochs}</div><div class="metric-label">Epochs</div></div>
         <div class="metric-box"><div class="metric-value">${r.mean_loss}</div><div class="metric-label">Mean Score</div></div>
         <div class="metric-box"><div class="metric-value">${r.std_loss}</div><div class="metric-label">Std Dev</div></div>
         <div class="metric-box"><div class="metric-value">${r.threshold}</div><div class="metric-label">Threshold</div></div>
       </div>`;
-      if (r.loss_image) tHtml += `<img class="viz-img" src="data:image/png;base64,${r.loss_image}">`;
-      content.innerHTML = tHtml;
+      if (r.loss_image) resultsHtml += `<img class="viz-img" src="data:image/png;base64,${r.loss_image}">`;
       break;
 
     case 4:
-      let clHtml = `<div class="stats-row">
+      resultsHtml += `<div class="stats-row">
         <div class="stat-pill"><span>Chunks:</span><span class="val">${r.chunks_processed}</span></div>
         <div class="stat-pill"><span>Replay Memory:</span><span class="val">${r.memory_size}</span></div>
         <div class="stat-pill"><span>Mean CL Loss:</span><span class="val">${r.mean_chunk_loss}</span></div>
       </div>`;
-      content.innerHTML = clHtml;
       break;
 
     case 5:
-      let dHtml = `<div class="stats-row">
+      resultsHtml += `<div class="stats-row">
         <div class="stat-pill"><span>Events:</span><span class="val">${r.event_count}</span></div>
         <div class="stat-pill"><span>Graphs:</span><span class="val">${r.graph_count}</span></div>
       </div>`;
       if (r.detections && r.detections.length) {
-        dHtml += `<table class="data-table"><tr><th>Graph</th><th>Score</th><th>Threshold</th><th>Status</th></tr>`;
+        resultsHtml += `<table class="data-table"><tr><th>Graph</th><th>Score</th><th>Threshold</th><th>Status</th></tr>`;
         r.detections.forEach(det => {
           const badge = det.status === "ANOMALY" ? "badge-anomaly" : "badge-normal";
-          dHtml += `<tr><td>#${det.graph}</td><td>${det.score}</td><td>${det.threshold}</td><td><span class="badge ${badge}">${det.status}</span></td></tr>`;
+          resultsHtml += `<tr><td>#${det.graph}</td><td>${det.score}</td><td>${det.threshold}</td><td><span class="badge ${badge}">${det.status}</span></td></tr>`;
         });
-        dHtml += `</table>`;
+        resultsHtml += `</table>`;
       }
-      content.innerHTML = dHtml;
       break;
 
     case 6:
-      let aHtml = `<div class="stats-row"><div class="stat-pill"><span>Total Graphs:</span><span class="val">${r.total_graphs}</span></div></div>`;
+      resultsHtml += `<div class="stats-row"><div class="stat-pill"><span>Total Graphs:</span><span class="val">${r.total_graphs}</span></div></div>`;
       if (r.attacks) {
-        aHtml += `<table class="data-table"><tr><th>Attack Type</th><th>Events</th><th>Graphs</th></tr>`;
+        resultsHtml += `<table class="data-table"><tr><th>Attack Type</th><th>Events</th><th>Graphs</th></tr>`;
         r.attacks.forEach(a => {
-          aHtml += `<tr><td>🔴 ${esc(a.name)}</td><td>${a.events}</td><td>${a.graphs}</td></tr>`;
+          resultsHtml += `<tr><td>🔴 ${esc(a.name)}</td><td>${a.events}</td><td>${a.graphs}</td></tr>`;
         });
-        aHtml += `</table>`;
+        resultsHtml += `</table>`;
       }
       // Real attack reports with file impacts
       if (r.attack_reports && r.attack_reports.length) {
-        aHtml += `<div class="impact-section"><h4>🔬 Real Attack File Impact Report</h4>`;
+        resultsHtml += `<div class="impact-section"><h4>🔬 Real Attack File Impact Report</h4>`;
         r.attack_reports.forEach(rpt => {
-          aHtml += `<div class="prevention-card">`;
-          aHtml += `<div class="atk-name">🔴 ${esc(rpt.attack_name)} <span class="badge badge-mitre">${esc(rpt.mitre_technique)}</span></div>`;
-          aHtml += `<div style="color:var(--text2);font-size:12px">${esc(rpt.description)}</div>`;
-          aHtml += `<div class="prevention-stats">`;
-          aHtml += `<div class="stat-pill"><span>Duration:</span><span class="val">${rpt.duration_ms}ms</span></div>`;
-          aHtml += `<div class="stat-pill"><span>Files Hit:</span><span class="val">${rpt.files_impacted}</span></div>`;
-          aHtml += `<div class="stat-pill"><span>Events:</span><span class="val">${rpt.events_generated}</span></div>`;
-          aHtml += `</div>`;
+          resultsHtml += `<div class="prevention-card">`;
+          resultsHtml += `<div class="atk-name">🔴 ${esc(rpt.attack_name)} <span class="badge badge-mitre">${esc(rpt.mitre_technique)}</span></div>`;
+          resultsHtml += `<div style="color:var(--text2);font-size:12px">${esc(rpt.description)}</div>`;
+          resultsHtml += `<div class="prevention-stats">`;
+          resultsHtml += `<div class="stat-pill"><span>Duration:</span><span class="val">${rpt.duration_ms}ms</span></div>`;
+          resultsHtml += `<div class="stat-pill"><span>Files Hit:</span><span class="val">${rpt.files_impacted}</span></div>`;
+          resultsHtml += `<div class="stat-pill"><span>Events:</span><span class="val">${rpt.events_generated}</span></div>`;
+          resultsHtml += `</div>`;
           if (rpt.impacts && rpt.impacts.length) {
-            aHtml += `<table class="impact-table"><tr><th>File</th><th>SHA Status</th><th>SHA Before</th><th>SHA After</th><th>Before</th><th>After</th></tr>`;
+            resultsHtml += `<table class="impact-table"><tr><th>File</th><th>SHA Status</th><th>AV Verdict</th><th>Signature</th><th>SHA Before</th><th>SHA After</th><th>Before</th><th>After</th></tr>`;
             rpt.impacts.forEach(imp => {
-              aHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
+              resultsHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="change-col">${esc(imp.av_status || '-')}</td><td class="size-col">${esc(imp.av_signature || '-')}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
             });
-            aHtml += `</table>`;
+            resultsHtml += `</table>`;
           }
-          aHtml += `</div>`;
+          resultsHtml += `</div>`;
         });
-        aHtml += `</div>`;
+        resultsHtml += `</div>`;
       }
-      content.innerHTML = aHtml;
       break;
 
     case 7:
@@ -516,9 +517,9 @@ function onStepComplete(d) {
           rHtml += `<div class="stat-pill"><span>Network:</span><span class="val">${p.network ? p.network.length : 0}</span></div>`;
           rHtml += `</div>`;
           if (p.impacts && p.impacts.length) {
-            rHtml += `<table class="impact-table"><tr><th>Affected File</th><th>SHA Status</th><th>SHA Before</th><th>SHA After</th><th>Size Before</th><th>Size After</th></tr>`;
+            rHtml += `<table class="impact-table"><tr><th>Affected File</th><th>SHA Status</th><th>AV Verdict</th><th>Signature</th><th>SHA Before</th><th>SHA After</th><th>Size Before</th><th>Size After</th></tr>`;
             p.impacts.forEach(imp => {
-              rHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
+              rHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="change-col">${esc(imp.av_status || '-')}</td><td class="size-col">${esc(imp.av_signature || '-')}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
             });
             rHtml += `</table>`;
           }
@@ -531,38 +532,37 @@ function onStepComplete(d) {
         });
         rHtml += `</div>`;
       }
-      content.innerHTML = rHtml;
+      resultsHtml += rHtml;
       break;
 
     case 8:
-      let mHtml = `<div class="metrics-grid">
+      resultsHtml += `<div class="metrics-grid">
         <div class="metric-box"><div class="metric-value" style="color:var(--green)">${r.precision}%</div><div class="metric-label">Precision</div></div>
         <div class="metric-box"><div class="metric-value" style="color:var(--green)">${r.recall}%</div><div class="metric-label">Recall</div></div>
         <div class="metric-box"><div class="metric-value" style="color:var(--accent)">${r.f1}%</div><div class="metric-label">F1 Score</div></div>
         <div class="metric-box"><div class="metric-value" style="color:var(--accent)">${r.accuracy}%</div><div class="metric-label">Accuracy</div></div>
         <div class="metric-box"><div class="metric-value">${r.auc}</div><div class="metric-label">AUC</div></div>
-      </div>
-      <div class="stats-row" style="margin-top:12px">
+      </div>`;
+      resultsHtml += `<div class="stats-row" style="margin-top:12px">
         <div class="stat-pill"><span>TP:</span><span class="val">${r.tp}</span></div>
         <div class="stat-pill"><span>FP:</span><span class="val">${r.fp}</span></div>
         <div class="stat-pill"><span>FN:</span><span class="val">${r.fn}</span></div>
         <div class="stat-pill"><span>TN:</span><span class="val">${r.tn}</span></div>
       </div>`;
-      if (r.cm_image) mHtml += `<div class="viz-title">Confusion Matrix</div><img class="viz-img" src="data:image/png;base64,${r.cm_image}" style="max-width:350px">`;
-      if (r.metrics_image) mHtml += `<div class="viz-title">ROC Curve & Score Distribution</div><img class="viz-img" src="data:image/png;base64,${r.metrics_image}">`;
-      content.innerHTML = mHtml;
+      if (r.cm_image) resultsHtml += `<div class="viz-title">Confusion Matrix</div><img class="viz-img" src="data:image/png;base64,${r.cm_image}" style="max-width:350px">`;
+      if (r.metrics_image) resultsHtml += `<div class="viz-title">ROC Curve & Score Distribution</div><img class="viz-img" src="data:image/png;base64,${r.metrics_image}">`;
       break;
 
     case 9:
-      let vHtml = "";
       if (r.visualizations) {
         r.visualizations.forEach(v => {
-          vHtml += `<div class="viz-title">${esc(v.title)}</div><img class="viz-img" src="data:image/png;base64,${v.image}">`;
+          resultsHtml += `<div class="viz-title">${esc(v.title)}</div><img class="viz-img" src="data:image/png;base64,${v.image}">`;
         });
       }
-      content.innerHTML = vHtml;
       break;
   }
+
+  resultsContainer.innerHTML = resultsHtml;
 }
 
 function onCollectionProgress(d) {
@@ -576,11 +576,113 @@ function onCollectionProgress(d) {
   if (label) { label.textContent = `${d.events} events (${d.elapsed}s / ${d.total}s)`; label.classList.remove("pulsing"); }
 }
 
+// ── Graph building sub-steps (step 2) ──
+function onGraphBuildStep(d) {
+  const content = document.getElementById("step2Content");
+  if (!content) return;
+
+  let feed = document.getElementById("graphBuildFeed");
+  if (!feed) {
+    feed = document.createElement("div");
+    feed.className = "live-feed";
+    feed.id = "graphBuildFeed";
+    feed.style.marginTop = "10px";
+    content.appendChild(feed);
+  }
+
+  const line = document.createElement("div");
+  line.className = "feed-line";
+
+  const icons = {
+    init:     "⚙",
+    partition: "📊",
+    nodes:    "◆",
+    edges:    "→",
+    features: "📈",
+    complete: "✓"
+  };
+  const colors = {
+    init:     "var(--text2)",
+    partition: "var(--accent)",
+    nodes:    "var(--orange)",
+    edges:    "var(--orange)",
+    features: "var(--accent)",
+    complete: "var(--green)"
+  };
+
+  const icon = icons[d.phase] || "→";
+  const color = colors[d.phase] || "var(--text2)";
+
+  line.innerHTML = `<span style="color:${color}">${icon} <span class="feed-detail">${esc(d.detail)}</span></span>`;
+  feed.appendChild(line);
+  feed.scrollTop = feed.scrollHeight;
+}
+
 function onTrainingProgress(d) {
   const fill = document.getElementById("subFill3");
   const label = document.getElementById("subLabel3");
   if (fill) fill.style.width = d.percent + "%";
   if (label) { label.textContent = `Epoch ${d.epoch}/${d.total_epochs} — Loss: ${d.loss}`; label.classList.remove("pulsing"); }
+}
+
+// ── GCN architecture sub-steps (step 3) ──
+function onGCNSubstep(d) {
+  const content = document.getElementById("step3Content");
+  if (!content) return;
+
+  let feed = document.getElementById("gcnLiveFeed");
+  if (!feed) {
+    feed = document.createElement("div");
+    feed.className = "live-feed";
+    feed.id = "gcnLiveFeed";
+    feed.style.marginTop = "10px";
+    content.appendChild(feed);
+  }
+
+  const line = document.createElement("div");
+  line.className = "feed-line";
+
+  const icons = {
+    arch_init:      "⚙",
+    arch_l1:        "①",
+    arch_l2:        "②",
+    arch_decode:    "③",
+    arch_loss:      "④",
+    arch_optim:     "⑤",
+    training_start: "▶",
+    stats_compute:  "📊",
+    stats_done:     "🎯"
+  };
+  const colors = {
+    arch_init:      "var(--text2)",
+    arch_l1:        "var(--accent)",
+    arch_l2:        "var(--accent)",
+    arch_decode:    "var(--orange)",
+    arch_loss:      "var(--orange)",
+    arch_optim:     "var(--green)",
+    training_start: "var(--text2)",
+    stats_compute:  "var(--text2)",
+    stats_done:     "var(--green)"
+  };
+
+  const icon  = icons[d.phase]  || "→";
+  const color = colors[d.phase] || "var(--text2)";
+
+  if (d.phase === "arch_init") {
+    line.innerHTML = `<span class="feed-phase">◆ INIT</span> <span class="feed-detail">${esc(d.detail)}</span>`;
+  } else if (d.phase === "training_start") {
+    line.innerHTML = `<span style="color:var(--text2)">${icon} <span class="feed-detail">${esc(d.detail)}</span></span>`;
+  } else if (d.phase === "stats_compute") {
+    line.innerHTML = `<span style="color:var(--text2)">${icon} <span class="feed-detail">${esc(d.detail)}</span></span>`;
+  } else if (d.phase === "stats_done") {
+    line.innerHTML = `<span style="color:var(--green)">${icon} <strong>Threshold set:</strong> <span class="feed-detail">${esc(d.detail)}</span></span>`;
+  } else {
+    // arch_l1, arch_l2, arch_decode, arch_loss, arch_optim
+    line.innerHTML = `<span style="padding-left:16px;color:${color}">${icon} <span class="feed-detail">${esc(d.detail)}</span></span>`;
+  }
+
+  feed.appendChild(line);
+  feed.scrollTop = feed.scrollHeight;
 }
 // \u2500\u2500 Continual Learning live progress \u2500\u2500
 function onCLProgress(d) {
@@ -613,6 +715,12 @@ function onCLProgress(d) {
       <span class="feed-detail">Processing <span class="feed-value">${d.new_graphs}</span> new graph(s) + <span class="feed-value">${d.replay_graphs}</span> replay sample(s) from memory</span>`;
   } else if (d.phase === "epoch") {
     line.innerHTML = `<span style="padding-left:16px">\u2514\u2500 Epoch ${d.epoch}/2 \u2014 loss: <span class="feed-loss">${d.loss}</span></span>`;
+  } else if (d.phase === "sampling") {
+    line.innerHTML = `<span style="padding-left:20px;color:var(--text2)">↪ Sampling: <span class="feed-value">${d.replay_graphs}</span> replay graph(s) from memory (<span class="feed-value">${d.memory_total}</span> stored)</span>`;
+  } else if (d.phase === "combining") {
+    line.innerHTML = `<span style="padding-left:20px;color:var(--text2)">⊕ Batch: <span class="feed-detail">${esc(d.detail)}</span></span>`;
+  } else if (d.phase === "memory_update") {
+    line.innerHTML = `<span style="padding-left:16px;color:var(--accent)">🗃 Memory: <span class="feed-detail">${esc(d.detail)}</span> <span class="sub-label">(${d.memory_size}/${d.memory_capacity})</span></span>`;
   } else if (d.phase === "chunk_done") {
     line.innerHTML = `<span style="padding-left:16px;color:var(--green)">\u2714 Chunk ${d.chunk} complete \u2014 avg loss: <span class="feed-loss">${d.chunk_loss}</span> &nbsp;|&nbsp; Memory: <span class="feed-value">${d.memory_size}</span> graphs</span>`;
   }
@@ -692,9 +800,9 @@ function onAttackProgress(d) {
       stagesDiv.appendChild(summary);
       // Show individual file impacts
       if (d.impacts && d.impacts.length) {
-        let impHtml = '<table class="impact-table" style="margin-top:6px"><tr><th>File</th><th>SHA Status</th><th>SHA Before</th><th>SHA After</th><th>Before</th><th>After</th></tr>';
+        let impHtml = '<table class="impact-table" style="margin-top:6px"><tr><th>File</th><th>SHA Status</th><th>AV Verdict</th><th>Signature</th><th>SHA Before</th><th>SHA After</th><th>Before</th><th>After</th></tr>';
         d.impacts.forEach(imp => {
-          impHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
+          impHtml += `<tr><td class="file-path">${esc(imp.file)}</td><td class="change-col">${esc(imp.sha_status || imp.change)}</td><td class="change-col">${esc(imp.av_status || '-')}</td><td class="size-col">${esc(imp.av_signature || '-')}</td><td class="size-col">${esc(imp.sha_before || '-')}</td><td class="size-col">${esc(imp.sha_after || '-')}</td><td class="size-col">${imp.size_before}B</td><td class="size-col">${imp.size_after}B</td></tr>`;
         });
         impHtml += '</table>';
         stagesDiv.insertAdjacentHTML('beforeend', impHtml);

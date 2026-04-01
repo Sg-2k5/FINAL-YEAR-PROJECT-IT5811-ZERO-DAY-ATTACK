@@ -43,6 +43,7 @@ from src.detection.enhanced_detector import HybridDetector
 from src.detection.detector import AlertManager
 from src.visualization.graph_visualizer import GraphVisualizer
 from src.utils.alert_logger import AlertLogger
+from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -236,10 +237,13 @@ def run_pipeline():
 
     executor = RealAttackExecutor(sandbox_base=str(Path(__file__).parent))
     sandbox_path = executor.setup()
+    av_scanner = ClamAVScanner()
     print(f"  ✓ Sandbox ready: {sandbox_path}")
+    print(f"  ✓ AV engine: {'ClamAV available' if av_scanner.available else 'ClamAV not found'}")
     print("  Running real attack scenarios...\n")
 
     attack_reports = executor.execute_all()
+    annotate_attack_reports_with_av(attack_reports, Path(sandbox_path), scanner=av_scanner)
 
     # Also generate simulated events for graph building
     simulator = EnhancedAttackSimulator()
@@ -271,7 +275,7 @@ def run_pipeline():
         print(f"  ● {rpt.attack_name:<30} {rpt.events_generated:>4} events  "
                             f"{n_impacts:>3} files SHA-affected  [{rpt.mitre_technique}]")
         for fi in rpt.files_impacted:
-                        print(f"      └─ {fi.path:<45} {fi.integrity_status} ({fi.change_summary})")
+                        print(f"      └─ {fi.path:<45} {fi.integrity_status} ({fi.change_summary}) | AV={fi.av_status or 'NOT_SCANNED'}")
 
     # ──────────────────────────────────────────────────────────
     # 7. Detect anomalies on attacks
@@ -309,6 +313,7 @@ def run_pipeline():
         print(f"  │  Files hit (SHA): {len(rpt.files_impacted)}")
         for fi in rpt.files_impacted:
             print(f"  │    • {fi.path}: {fi.integrity_status} ({fi.change_summary})")
+            print(f"  │      AV status: {fi.av_status}  Signature: {fi.av_signature or '-'}")
             if fi.size_before or fi.size_after:
                 print(f"  │      size {fi.size_before}→{fi.size_after} bytes")
         if detected:

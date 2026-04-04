@@ -68,15 +68,21 @@ class AlertLogger:
         return path
 
     # ── CSV export ─────────────────────────────────────────────
-    def save_results_csv(self, results: List[DetectionResult]):
+    def save_results_csv(self, results: List[DetectionResult], extra: Optional[Dict] = None):
         """Save detection results to a CSV file."""
         path = os.path.join(self.output_dir, f"detection_{self.session_id}.csv")
 
+        base_headers = ["graph_id", "anomaly_score", "threshold", "is_anomalous", "timestamp"]
+        extra_headers = list(extra.keys()) if extra else []
+
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["graph_id", "anomaly_score", "threshold", "is_anomalous", "timestamp"])
+            writer.writerow(base_headers + extra_headers)
             for r in results:
-                writer.writerow([r.graph_id, round(float(r.anomaly_score), 6), round(float(r.threshold), 6), bool(r.is_anomalous), int(r.timestamp)])
+                row = [r.graph_id, round(float(r.anomaly_score), 6), round(float(r.threshold), 6), bool(r.is_anomalous), int(r.timestamp)]
+                if extra:
+                    row.extend([_to_native(extra[k]) for k in extra_headers])
+                writer.writerow(row)
 
         return path
 

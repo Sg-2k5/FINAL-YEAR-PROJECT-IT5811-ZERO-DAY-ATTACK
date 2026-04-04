@@ -6,21 +6,21 @@
 <title>Zero-Day Attack Detection — Live Dashboard</title>
 <style>
   :root {
-    --bg: #0f1117;
-    --card: #1a1d27;
-    --border: #2a2d3a;
-    --accent: #4f8cff;
-    --green: #00e676;
-    --red: #ff5252;
-    --orange: #ffab40;
-    --text: #e0e0e0;
-    --text2: #8a8fa8;
+    --bg: #ffffff;
+    --card: #f5f5f5;
+    --border: #d0d0d0;
+    --accent: #0066cc;
+    --green: #00aa00;
+    --red: #dd0000;
+    --orange: #ff8800;
+    --text: #333333;
+    --text2: #666666;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
 
   .header {
-    background: linear-gradient(135deg, #1a1d27 0%, #252838 100%);
+    background: linear-gradient(135deg, #e6f0ff 0%, #f0f5ff 100%);
     padding: 24px 32px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
   }
@@ -33,7 +33,7 @@
     border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
     transition: all 0.2s;
   }
-  #startBtn:hover { background: #6ba0ff; transform: translateY(-1px); }
+  #startBtn:hover { background: #0052a3; transform: translateY(-1px); }
   #startBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
@@ -45,7 +45,7 @@
   }
   .progress-bar-container .label { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
   .progress-track {
-    background: #252838; border-radius: 8px; height: 12px; overflow: hidden;
+    background: #e8e8e8; border-radius: 8px; height: 12px; overflow: hidden;
   }
   .progress-fill {
     height: 100%; background: linear-gradient(90deg, var(--accent), var(--green));
@@ -58,7 +58,7 @@
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
     padding: 20px 24px; margin-bottom: 16px; transition: border-color 0.3s;
   }
-  .step-card.active { border-color: var(--accent); box-shadow: 0 0 20px rgba(79,140,255,0.1); }
+  .step-card.active { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,102,204,0.1); }
   .step-card.done { border-color: var(--green); }
   .step-card.error { border-color: var(--red); }
 
@@ -66,7 +66,7 @@
   .step-num {
     width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
     justify-content: center; font-weight: 700; font-size: 14px;
-    background: #252838; color: var(--text2); flex-shrink: 0;
+    background: #e8e8e8; color: #333333; flex-shrink: 0;
   }
   .step-card.active .step-num { background: var(--accent); color: #fff; }
   .step-card.done .step-num { background: var(--green); color: #000; }
@@ -79,15 +79,15 @@
   .sub-progress {
     margin-top: 10px; display: flex; align-items: center; gap: 12px;
   }
-  .sub-track { flex: 1; background: #252838; height: 6px; border-radius: 4px; overflow: hidden; }
+  .sub-track { flex: 1; background: #e8e8e8; height: 6px; border-radius: 4px; overflow: hidden; }
   .sub-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
   .sub-label { font-size: 12px; color: var(--text2); min-width: 60px; text-align: right; }
 
   /* Data tables */
   .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
   .data-table th {
-    text-align: left; padding: 8px 12px; background: #252838;
-    color: var(--text2); font-weight: 600; border-bottom: 1px solid var(--border);
+    text-align: left; padding: 8px 12px; background: #e8e8e8;
+    color: #333333; font-weight: 600; border-bottom: 1px solid var(--border);
   }
   .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
   .data-table tr:last-child td { border-bottom: none; }
@@ -96,28 +96,28 @@
     display: inline-block; padding: 2px 8px; border-radius: 4px;
     font-size: 11px; font-weight: 600;
   }
-  .badge-normal { background: rgba(0,230,118,0.15); color: var(--green); }
-  .badge-anomaly { background: rgba(255,82,82,0.15); color: var(--red); }
-  .badge-low { background: rgba(255,171,64,0.1); color: var(--orange); }
-  .badge-medium { background: rgba(255,171,64,0.2); color: var(--orange); }
-  .badge-high { background: rgba(255,82,82,0.2); color: var(--red); }
-  .badge-critical { background: rgba(255,82,82,0.3); color: var(--red); }
-  .badge-detected { background: rgba(0,230,118,0.2); color: var(--green); }
-  .badge-missed { background: rgba(255,82,82,0.2); color: var(--red); }
-  .badge-mitre { background: rgba(79,140,255,0.15); color: var(--accent); font-size: 10px; }
+  .badge-normal { background: rgba(0,170,0,0.1); color: var(--green); }
+  .badge-anomaly { background: rgba(221,0,0,0.1); color: var(--red); }
+  .badge-low { background: rgba(255,136,0,0.1); color: var(--orange); }
+  .badge-medium { background: rgba(255,136,0,0.15); color: var(--orange); }
+  .badge-high { background: rgba(221,0,0,0.15); color: var(--red); }
+  .badge-critical { background: rgba(221,0,0,0.2); color: var(--red); }
+  .badge-detected { background: rgba(0,170,0,0.15); color: var(--green); }
+  .badge-missed { background: rgba(221,0,0,0.15); color: var(--red); }
+  .badge-mitre { background: rgba(0,102,204,0.1); color: var(--accent); font-size: 10px; }
 
   /* Impact table */
   .impact-section { margin-top: 16px; }
   .impact-section h4 { font-size: 14px; margin-bottom: 8px; color: var(--text); }
   .impact-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
-  .impact-table th { text-align: left; padding: 6px 10px; background: #1e2230; color: var(--text2); font-weight: 600; }
+  .impact-table th { text-align: left; padding: 6px 10px; background: #f0f0f0; color: #333333; font-weight: 600; }
   .impact-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); font-family: 'Cascadia Code', monospace; font-size: 11px; }
   .impact-table .file-path { color: var(--accent); max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
   .impact-table .change-col { color: var(--orange); }
   .impact-table .size-col { color: var(--text2); }
 
   .prevention-card {
-    background: #151820; border: 1px solid var(--border); border-radius: 8px;
+    background: #f8f8f8; border: 1px solid var(--border); border-radius: 8px;
     padding: 14px 16px; margin-top: 12px;
   }
   .prevention-card .atk-name { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
@@ -127,11 +127,11 @@
   .live-feed {
     margin-top: 12px; max-height: 320px; overflow-y: auto;
     font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 12px;
-    background: #0d0f14; border: 1px solid var(--border); border-radius: 8px;
+    background: #fafafa; border: 1px solid var(--border); border-radius: 8px;
     padding: 12px;
   }
   .live-feed .feed-line {
-    padding: 4px 0; border-bottom: 1px solid rgba(42,45,58,0.4);
+    padding: 4px 0; border-bottom: 1px solid rgba(180,180,180,0.3);
     animation: feedIn 0.4s ease-out;
   }
   .live-feed .feed-line:last-child { border-bottom: none; }
@@ -142,18 +142,18 @@
   .feed-loss { color: var(--orange); font-weight: 600; }
   .feed-attack-name { color: var(--red); font-weight: 700; }
   .feed-stage { color: var(--accent); font-style: italic; }
-  .feed-file { color: #80cbc4; font-family: 'Cascadia Code', monospace; font-size: 11px; }
+  .feed-file { color: #006633; font-family: 'Cascadia Code', monospace; font-size: 11px; }
 
   .cl-chunk-card {
-    background: #151820; border: 1px solid var(--border); border-radius: 6px;
+    background: #f8f8f8; border: 1px solid var(--border); border-radius: 6px;
     padding: 10px 12px; margin-top: 8px;
   }
   .cl-chunk-header { font-size: 13px; font-weight: 600; color: var(--text); }
   .cl-epoch-row { font-size: 12px; color: var(--text2); margin-top: 4px; padding-left: 12px; }
 
   .atk-live-card {
-    background: linear-gradient(135deg, #1a1015 0%, #151820 100%);
-    border: 1px solid rgba(255,82,82,0.3); border-radius: 8px;
+    background: linear-gradient(135deg, #ffe8e8 0%, #f8f8f8 100%);
+    border: 1px solid rgba(221,0,0,0.2); border-radius: 8px;
     padding: 12px 14px; margin-top: 10px;
   }
   .atk-live-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -171,7 +171,7 @@
     gap: 12px; margin-top: 12px;
   }
   .metric-box {
-    background: #252838; border-radius: 8px; padding: 14px;
+    background: #e8e8e8; border-radius: 8px; padding: 14px;
     text-align: center;
   }
   .metric-value { font-size: 28px; font-weight: 700; color: var(--accent); }
@@ -187,14 +187,14 @@
   /* Stats row */
   .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
   .stat-pill {
-    background: #252838; border-radius: 20px; padding: 6px 14px;
+    background: #e8e8e8; border-radius: 20px; padding: 6px 14px;
     font-size: 13px; display: flex; gap: 6px; align-items: center;
   }
   .stat-pill .val { font-weight: 600; color: var(--accent); }
 
   /* Final summary */
   .summary-card {
-    background: linear-gradient(135deg, #1a2a1a 0%, #1a1d27 100%);
+    background: linear-gradient(135deg, #e8f5e9 0%, #f0f8f0 100%);
     border: 1px solid var(--green); border-radius: 12px; padding: 24px;
     margin-top: 20px; display: none;
   }
@@ -202,15 +202,42 @@
 
   /* Log */
   #logBox {
-    background: #0a0c10; border: 1px solid var(--border); border-radius: 8px;
+    background: #fcfcfc; border: 1px solid var(--border); border-radius: 8px;
     padding: 16px; margin-top: 20px; max-height: 200px; overflow-y: auto;
     font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 12px;
-    color: var(--text2); display: none;
+    color: #666666; display: none;
   }
   .log-entry { margin-bottom: 4px; }
   .log-time { color: var(--accent); }
 
   .hidden { display: none; }
+  
+  /* Control Panel Styles */
+  .control-panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 20px; display: none;
+  }
+  .control-panel.visible { display: block; }
+  .control-panel.disabled { opacity: 0.6; pointer-events: none; }
+  .control-panel h3 { color: var(--accent); font-size: 16px; margin-bottom: 16px; }
+  .control-section { margin-bottom: 20px; }
+  .control-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; text-transform: uppercase; }
+  .control-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .control-group { display: flex; flex-direction: column; }
+  .control-group label { font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .control-group input[type="number"], .control-group input[type="range"] {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: #ffffff; color: var(--text); font-size: 13px;
+  }
+  .control-group input[type="number"]:focus, .control-group input[type="range"]:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 8px rgba(0,102,204,0.2);
+  }
+  .range-value { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+  .control-actions { display: flex; gap: 12px; margin-top: 16px; }
+  .btn-reset { background: #e0e0e0; color: var(--text); border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-reset:hover { background: #d0d0d0; }
+  .validation-error { color: var(--red); font-size: 11px; margin-top: 4px; }
+
 
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   .pulsing { animation: pulse 1.5s infinite; }
@@ -232,6 +259,122 @@
     <div class="label">Pipeline Progress</div>
     <div class="progress-track"><div class="progress-fill" id="mainProgress"></div></div>
     <div class="progress-text" id="progressLabel">Ready to start</div>
+  </div>
+
+  <!-- Training Control Panel -->
+  <div class="control-panel" id="controlPanel">
+    <h3>⚙️ Training Configuration (Session-Scoped)</h3>
+    
+    <!-- Collection Settings -->
+    <div class="control-section">
+      <div class="control-section-title">Data Collection</div>
+      <div class="control-row">
+        <div class="control-group">
+          <label for="trainDuration">Training Duration (sec)</label>
+          <input type="number" id="trainDuration" min="5" max="60" value="20" step="1">
+          <div class="range-value" id="trainDurationVal">20 sec</div>
+          <div class="validation-error" id="trainDurationErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="testDuration">Test Duration (sec)</label>
+          <input type="number" id="testDuration" min="5" max="60" value="15" step="1">
+          <div class="range-value" id="testDurationVal">15 sec</div>
+          <div class="validation-error" id="testDurationErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="pollingInterval">Polling Interval (sec)</label>
+          <input type="number" id="pollingInterval" min="0.1" max="1.0" value="0.3" step="0.1">
+          <div class="range-value" id="pollingIntervalVal">0.3 sec</div>
+          <div class="validation-error" id="pollingIntervalErr"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graph Settings -->
+    <div class="control-section">
+      <div class="control-section-title">Graph Building</div>
+      <div class="control-row">
+        <div class="control-group">
+          <label for="windowSize">Window Size (sec)</label>
+          <input type="number" id="windowSize" min="1" max="30" value="5" step="1">
+          <div class="range-value" id="windowSizeVal">5 sec</div>
+          <div class="validation-error" id="windowSizeErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="maxNodes">Max Nodes Per Graph</label>
+          <input type="number" id="maxNodes" min="100" max="1000" value="500" step="50">
+          <div class="range-value" id="maxNodesVal">500 nodes</div>
+          <div class="validation-error" id="maxNodesErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="filterNoise">Filter System Noise</label>
+          <input type="checkbox" id="filterNoise" style="width:20px;height:20px;margin-top:8px;">
+          <div class="range-value" id="filterNoiseVal">Disabled</div>
+          <div class="validation-error" id="filterNoiseErr"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Training -->
+    <div class="control-section">
+      <div class="control-section-title">Model Training</div>
+      <div class="control-row">
+        <div class="control-group">
+          <label for="epochs">Epochs</label>
+          <input type="number" id="epochs" min="10" max="100" value="30" step="5">
+          <div class="range-value" id="epochsVal">30 epochs</div>
+          <div class="validation-error" id="epochsErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="learningRate">Learning Rate</label>
+          <input type="number" id="learningRate" min="0.001" max="0.1" value="0.01" step="0.001">
+          <div class="range-value" id="learningRateVal">0.01</div>
+          <div class="validation-error" id="learningRateErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="dropout">Dropout</label>
+          <input type="number" id="dropout" min="0.0" max="0.5" value="0.2" step="0.05">
+          <div class="range-value" id="dropoutVal">0.2</div>
+          <div class="validation-error" id="dropoutErr"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detection Settings -->
+    <div class="control-section">
+      <div class="control-section-title">Anomaly Detection</div>
+      <div class="control-row">
+        <div class="control-group">
+          <label for="thresholdSigma">Threshold (σ)</label>
+          <input type="number" id="thresholdSigma" min="1.5" max="4.0" value="2.5" step="0.1">
+          <div class="range-value" id="thresholdSigmaVal">2.5σ (moderate sensitivity)</div>
+          <div class="validation-error" id="thresholdSigmaErr"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Continual Learning -->
+    <div class="control-section">
+      <div class="control-section-title">Continual Learning</div>
+      <div class="control-row">
+        <div class="control-group">
+          <label for="replayRatio">Replay Ratio</label>
+          <input type="number" id="replayRatio" min="0.2" max="0.8" value="0.5" step="0.1">
+          <div class="range-value" id="replayRatioVal">0.5 (balanced)</div>
+          <div class="validation-error" id="replayRatioErr"></div>
+        </div>
+        <div class="control-group">
+          <label for="memorySize">Memory Size (graphs)</label>
+          <input type="number" id="memorySize" min="32" max="256" value="64" step="16">
+          <div class="range-value" id="memorySizeVal">64 graphs</div>
+          <div class="validation-error" id="memorySizeErr"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-actions">
+      <button class="btn-reset" onclick="resetToDefaults()">↺ Reset to Defaults</button>
+    </div>
   </div>
 
   <!-- Steps -->
@@ -273,7 +416,7 @@
     </div>
     <div class="step-card" id="step8">
       <div class="step-header"><div class="step-num">8</div><div class="step-title">Compute Metrics</div></div>
-      <div class="step-desc">Precision, Recall, F1, ROC Curve &amp; AUC</div>
+      <div class="step-desc">Evaluate detector quality using confusion-matrix metrics (TP, FP, FN, TN), ROC analysis, and AUC discrimination score</div>
       <div class="step-content hidden" id="step8Content"></div>
     </div>
     <div class="step-card" id="step9">
@@ -297,6 +440,7 @@
 const TOTAL_STEPS = 9;
 let completedSteps = 0;
 let evtSource = null;
+let controlPanelInitialized = false;
 
 function resetUI() {
   completedSteps = 0;
@@ -314,6 +458,132 @@ function resetUI() {
   }
 }
 
+// ─── Control Panel Functions ───
+function showControlPanel() {
+  document.getElementById("controlPanel").classList.add("visible");
+  if (!controlPanelInitialized) {
+    setupControlPanelListeners();
+    controlPanelInitialized = true;
+  }
+  refreshControlValueDisplays();
+}
+
+function hideControlPanel() {
+  document.getElementById("controlPanel").classList.remove("visible");
+}
+
+function disableControlPanel() {
+  document.getElementById("controlPanel").classList.add("disabled");
+}
+
+function enableControlPanel() {
+  document.getElementById("controlPanel").classList.remove("disabled");
+}
+
+function setupControlPanelListeners() {
+  // Update live value displays
+  const fields = ['trainDuration', 'testDuration', 'pollingInterval', 'windowSize', 'maxNodes', 'filterNoise', 'epochs', 'learningRate', 'dropout', 'thresholdSigma', 'replayRatio', 'memorySize'];
+  fields.forEach(field => {
+    const el = document.getElementById(field);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const val = field === 'filterNoise' ? el.checked : parseFloat(el.value);
+      const display = {
+        'trainDuration': `${val} sec`,
+        'testDuration': `${val} sec`,
+        'pollingInterval': `${val} sec`,
+        'windowSize': `${val} sec`,
+        'maxNodes': `${val} nodes`,
+        'filterNoise': val ? 'Enabled' : 'Disabled',
+        'epochs': `${val} epochs`,
+        'learningRate': `${val}`,
+        'dropout': `${val}`,
+        'thresholdSigma': `${val}σ (${val < 2.0 ? 'high' : val < 2.5 ? 'mod-high' : val < 3.0 ? 'moderate' : 'low'} sensitivity)`,
+        'replayRatio': `${val} (${val < 0.35 ? 'low' : val < 0.65 ? 'balanced' : 'high'} replay)`,
+        'memorySize': `${val} graphs`,
+      };
+      if (display[field]) {
+        document.getElementById(field + 'Val').textContent = display[field];
+      }
+      clearError(field);
+    });
+  });
+}
+
+function refreshControlValueDisplays() {
+  const fields = ['trainDuration', 'testDuration', 'pollingInterval', 'windowSize', 'maxNodes', 'filterNoise', 'epochs', 'learningRate', 'dropout', 'thresholdSigma', 'replayRatio', 'memorySize'];
+  fields.forEach(field => {
+    const el = document.getElementById(field);
+    if (el) {
+      el.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+function clearError(field) {
+  const err = document.getElementById(field + 'Err');
+  if (err) err.textContent = '';
+}
+
+function resetToDefaults() {
+  document.getElementById('trainDuration').value = 20;
+  document.getElementById('testDuration').value = 15;
+  document.getElementById('pollingInterval').value = 0.3;
+  document.getElementById('windowSize').value = 5;
+  document.getElementById('maxNodes').value = 500;
+  document.getElementById('filterNoise').checked = false;
+  document.getElementById('epochs').value = 30;
+  document.getElementById('learningRate').value = 0.01;
+  document.getElementById('dropout').value = 0.2;
+  document.getElementById('thresholdSigma').value = 2.5;
+  document.getElementById('replayRatio').value = 0.5;
+  document.getElementById('memorySize').value = 64;
+  
+  // Update displays
+  refreshControlValueDisplays();
+}
+
+function getControlPanelConfig() {
+  return {
+    'train_duration': parseInt(document.getElementById('trainDuration').value),
+    'test_duration': parseInt(document.getElementById('testDuration').value),
+    'polling_interval': parseFloat(document.getElementById('pollingInterval').value),
+    'window_size': parseInt(document.getElementById('windowSize').value),
+    'max_nodes': parseInt(document.getElementById('maxNodes').value),
+    'filter_system_noise': document.getElementById('filterNoise').checked,
+    'epochs': parseInt(document.getElementById('epochs').value),
+    'learning_rate': parseFloat(document.getElementById('learningRate').value),
+    'dropout': parseFloat(document.getElementById('dropout').value),
+    'threshold_sigma': parseFloat(document.getElementById('thresholdSigma').value),
+    'replay_ratio': parseFloat(document.getElementById('replayRatio').value),
+    'memory_size': parseInt(document.getElementById('memorySize').value),
+  };
+}
+
+function validateControlPanelConfig(config) {
+  const checks = [
+    ['trainDuration', config.train_duration >= 5 && config.train_duration <= 60, 'Must be between 5 and 60'],
+    ['testDuration', config.test_duration >= 5 && config.test_duration <= 60, 'Must be between 5 and 60'],
+    ['pollingInterval', config.polling_interval >= 0.1 && config.polling_interval <= 1.0, 'Must be between 0.1 and 1.0'],
+    ['windowSize', config.window_size >= 1 && config.window_size <= 30, 'Must be between 1 and 30'],
+    ['maxNodes', config.max_nodes >= 100 && config.max_nodes <= 1000, 'Must be between 100 and 1000'],
+    ['epochs', config.epochs >= 10 && config.epochs <= 100, 'Must be between 10 and 100'],
+    ['learningRate', config.learning_rate >= 0.001 && config.learning_rate <= 0.1, 'Must be between 0.001 and 0.1'],
+    ['dropout', config.dropout >= 0.0 && config.dropout <= 0.5, 'Must be between 0.0 and 0.5'],
+    ['thresholdSigma', config.threshold_sigma >= 1.5 && config.threshold_sigma <= 4.0, 'Must be between 1.5 and 4.0'],
+    ['replayRatio', config.replay_ratio >= 0.2 && config.replay_ratio <= 0.8, 'Must be between 0.2 and 0.8'],
+    ['memorySize', config.memory_size >= 32 && config.memory_size <= 256, 'Must be between 32 and 256'],
+  ];
+
+  let valid = true;
+  checks.forEach(([field, ok, msg]) => {
+    const err = document.getElementById(field + 'Err');
+    if (err) err.textContent = ok ? '' : msg;
+    if (!ok) valid = false;
+  });
+  return valid;
+}
+
 function connectSSE() {
   if (evtSource) evtSource.close();
   evtSource = new EventSource("/stream");
@@ -322,6 +592,7 @@ function connectSSE() {
     const btn = document.getElementById("startBtn");
     btn.disabled = false;
     btn.textContent = "▶ Run Pipeline";
+    enableControlPanel();
   };
 }
 
@@ -329,25 +600,47 @@ function startPipeline() {
   const btn = document.getElementById("startBtn");
   btn.disabled = true;
   btn.textContent = "⏳ Running...";
+  hideControlPanel();
   resetUI();
-
-  fetch("/start", { method: "POST" })
+  
+  // Get config and send with POST
+  const config = getControlPanelConfig();
+  if (!validateControlPanelConfig(config)) {
+    btn.disabled = false;
+    btn.textContent = "▶ Run Pipeline";
+    showControlPanel();
+    return;
+  }
+  
+  fetch("/start", { 
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config)
+  })
     .then(r => r.json())
-    .then(() => connectSSE())
+    .then(() => {
+      disableControlPanel();
+      connectSSE();
+    })
     .catch(() => {
       btn.disabled = false;
       btn.textContent = "▶ Run Pipeline";
+      showControlPanel();
+      enableControlPanel();
     });
 }
 
 // On page load: check if pipeline is running and replay history 
 window.addEventListener("DOMContentLoaded", () => {
+  showControlPanel();
   fetch("/status").then(r => r.json()).then(s => {
     if (s.running) {
       const btn = document.getElementById("startBtn");
       btn.disabled = true;
       btn.textContent = "⏳ Running...";
       document.getElementById("logBox").style.display = "block";
+      disableControlPanel();
+      hideControlPanel();
       // Replay all past events, then connect for live ones
       fetch("/history").then(r => r.json()).then(events => {
         events.forEach(evt => handleEvent(evt));
@@ -369,6 +662,8 @@ function handleEvent(evt) {
     case "gcn_substep": onGCNSubstep(evt.data); break;
     case "cl_progress": onCLProgress(evt.data); break;
     case "attack_progress": onAttackProgress(evt.data); break;
+    case "effective_config": onEffectiveConfig(evt.data); break;
+    case "av_scan_summary": onAVScanSummary(evt.data); break;
     case "pipeline_complete": onPipelineComplete(evt.data); break;
     case "error": onError(evt.data); break;
   }
@@ -536,6 +831,16 @@ function onStepComplete(d) {
       break;
 
     case 8:
+      resultsHtml += `<div class="prevention-card" style="margin-bottom:12px;">
+        <div class="atk-name">Metric Interpretation (Technical, Simple)</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.55;">
+          <strong>Precision</strong> = TP / (TP + FP): when the model predicts anomaly, how often it is correct.<br>
+          <strong>Recall (TPR)</strong> = TP / (TP + FN): how many true attacks are detected.<br>
+          <strong>F1 Score</strong> = harmonic mean of precision and recall, useful under class imbalance.<br>
+          <strong>Accuracy</strong> = (TP + TN) / N: overall correctness across normal and attack samples.<br>
+          <strong>AUC</strong> = area under ROC: threshold-independent separability between normal vs attack scores.
+        </div>
+      </div>`;
       resultsHtml += `<div class="metrics-grid">
         <div class="metric-box"><div class="metric-value" style="color:var(--green)">${r.precision}%</div><div class="metric-label">Precision</div></div>
         <div class="metric-box"><div class="metric-value" style="color:var(--green)">${r.recall}%</div><div class="metric-label">Recall</div></div>
@@ -548,6 +853,14 @@ function onStepComplete(d) {
         <div class="stat-pill"><span>FP:</span><span class="val">${r.fp}</span></div>
         <div class="stat-pill"><span>FN:</span><span class="val">${r.fn}</span></div>
         <div class="stat-pill"><span>TN:</span><span class="val">${r.tn}</span></div>
+      </div>`;
+      resultsHtml += `<div class="prevention-card" style="margin-top:10px;">
+        <div class="atk-name">What The Graphs Describe</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.55;">
+          <strong>Confusion Matrix:</strong> counts of classification outcomes. TP/TN are correct detections; FP/FN are error modes (false alarms vs missed attacks).<br>
+          <strong>ROC Curve:</strong> plots True Positive Rate against False Positive Rate over multiple decision thresholds. A curve closer to top-left indicates stronger detection performance.<br>
+          <strong>Score Distribution:</strong> histogram of anomaly scores for normal and attack samples. Better model separation appears as lower overlap between the two distributions.
+        </div>
       </div>`;
       if (r.cm_image) resultsHtml += `<div class="viz-title">Confusion Matrix</div><img class="viz-img" src="data:image/png;base64,${r.cm_image}" style="max-width:350px">`;
       if (r.metrics_image) resultsHtml += `<div class="viz-title">ROC Curve & Score Distribution</div><img class="viz-img" src="data:image/png;base64,${r.metrics_image}">`;
@@ -689,21 +1002,25 @@ function onCLProgress(d) {
   const content = document.getElementById("step4Content");
   if (!content) return;
 
-  // Ensure live feed container exists
+  // Initialize feed in step intermediate steps area
   let feed = document.getElementById("clLiveFeed");
   if (!feed) {
-    content.innerHTML = `
-      <div class="sub-progress" id="subProgress4">
-        <div class="sub-track"><div class="sub-fill" id="subFill4" style="width:0%"></div></div>
-        <div class="sub-label" id="subLabel4">Adapting...</div>
-      </div>
-      <div class="live-feed" id="clLiveFeed"></div>
-    `;
-    feed = document.getElementById("clLiveFeed");
+    const stepsContainer = document.getElementById("step4Steps");
+    if (stepsContainer) {
+      stepsContainer.innerHTML = `
+        <div class="sub-progress" id="subProgress4">
+          <div class="sub-track"><div class="sub-fill" id="subFill4" style="width:0%"></div></div>
+          <div class="sub-label" id="subLabel4">Adapting...</div>
+        </div>
+        <div class="live-feed" id="clLiveFeed" style="max-height:700px;overflow-y:auto"></div>
+      `;
+      feed = document.getElementById("clLiveFeed");
+    }
   }
 
   const line = document.createElement("div");
   line.className = "feed-line";
+  line.style.marginBottom = "8px";
 
   if (d.phase === "chunk_start") {
     const pct = Math.round((d.chunk / d.total_chunks) * 100);
@@ -711,18 +1028,86 @@ function onCLProgress(d) {
     const label = document.getElementById("subLabel4");
     if (fill) fill.style.width = pct + "%";
     if (label) label.textContent = `Chunk ${d.chunk}/${d.total_chunks}`;
-    line.innerHTML = `<span class="feed-phase">\u25B6 Chunk ${d.chunk}/${d.total_chunks}</span>
-      <span class="feed-detail">Processing <span class="feed-value">${d.new_graphs}</span> new graph(s) + <span class="feed-value">${d.replay_graphs}</span> replay sample(s) from memory</span>`;
+    line.innerHTML = `<div style="padding:8px;background:rgba(100,200,255,0.1);border-radius:4px;border-left:3px solid var(--blue)">
+      <span class="feed-phase" style="font-weight:600">▶ Chunk ${d.chunk}/${d.total_chunks}</span>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">Processing <span class="feed-value">${d.new_graphs}</span> new graph(s) + <span class="feed-value">${d.replay_graphs}</span> replay sample(s)</div>
+    </div>`;
+  } else if (d.phase === "graph_structure") {
+    line.innerHTML = `<div style="padding:6px 8px;padding-left:24px;border-left:2px solid var(--blue);color:var(--blue);font-size:11px;line-height:1.6">
+      <strong>📊 Graph ${d.graph_id}</strong> <span style="color:var(--text2)">[${d.is_replay ? 'REPLAY' : 'NEW'}]</span>
+      <div style="margin-top:3px;color:var(--text3)">↳ ${d.num_nodes} nodes, ${d.num_edges} edges | ${esc(d.detail)}</div>
+    </div>`;
+  } else if (d.phase === "node_features") {
+    line.innerHTML = `<div style="padding:4px 8px;padding-left:32px;border-left:2px solid var(--accent);color:var(--accent);font-size:10px;line-height:1.5">
+      <strong>◆ Node Features</strong> <span style="color:var(--text3)">6D × ${d.num_nodes} matrix</span>
+      <div style="margin-top:2px;color:var(--text3)">→ ${esc(d.detail)}</div>
+    </div>`;
+  } else if (d.phase === "edge_structure") {
+    line.innerHTML = `<div style="padding:4px 8px;padding-left:32px;border-left:2px solid var(--orange);color:var(--orange);font-size:10px;line-height:1.5">
+      <strong>→ Edge Index</strong> <span style="color:var(--text3)">(2, ${d.num_edges}) sparse</span>
+      <div style="margin-top:2px;color:var(--text3)">→ ${esc(d.detail)}</div>
+    </div>`;
   } else if (d.phase === "epoch") {
-    line.innerHTML = `<span style="padding-left:16px">\u2514\u2500 Epoch ${d.epoch}/2 \u2014 loss: <span class="feed-loss">${d.loss}</span></span>`;
+    line.innerHTML = `<span style="padding-left:16px;color:var(--text3);font-size:11px">└─ Epoch ${d.epoch}/2 — loss: <span class="feed-loss" style="color:var(--orange);font-weight:600">${d.loss}</span></span>`;
+  } else if (d.phase === "geometric_conversion") {
+    line.innerHTML = `<div style="padding:8px;background:rgba(0,150,255,0.08);border-radius:4px;border-left:4px solid var(--blue);margin-top:6px">
+      <div style="font-weight:600;color:var(--blue);margin-bottom:6px">◆ Geometric Data Conversion</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">${esc(d.detail)}</div>`;
+    if (d.substeps) {
+      line.innerHTML += `<div style="padding:4px 0;border-top:1px solid rgba(0,150,255,0.2)">`;
+      d.substeps.forEach((step, i) => {
+        line.innerHTML += `<div style="font-size:10px;color:var(--text3);line-height:1.5;padding:2px 0;margin-left:12px">• ${esc(step)}</div>`;
+      });
+      line.innerHTML += `</div>`;
+    }
+    line.innerHTML += `</div>`;
+  } else if (d.phase === "encoding") {
+    line.innerHTML = `<div style="padding:8px;background:rgba(100,200,255,0.08);border-radius:4px;border-left:4px solid var(--accent);margin-top:6px">
+      <div style="font-weight:600;color:var(--accent);margin-bottom:6px">↑ GCN Encoding Layers</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-family:monospace">${esc(d.detail)}</div>`;
+    if (d.substeps) {
+      line.innerHTML += `<div style="padding:4px 0;border-top:1px solid rgba(100,200,255,0.2)">`;
+      d.substeps.forEach((step, i) => {
+        line.innerHTML += `<div style="font-size:10px;color:var(--text3);line-height:1.6;padding:3px 0;margin-left:12px;font-family:'Courier New',monospace">• ${esc(step)}</div>`;
+      });
+      line.innerHTML += `</div>`;
+    }
+    line.innerHTML += `</div>`;
+  } else if (d.phase === "decoding") {
+    line.innerHTML = `<div style="padding:8px;background:rgba(255,150,0,0.08);border-radius:4px;border-left:4px solid var(--orange);margin-top:6px">
+      <div style="font-weight:600;color:var(--orange);margin-bottom:6px">↓ Inner Product Decoder & Reconstruction</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-family:monospace">${esc(d.detail)}</div>`;
+    if (d.substeps) {
+      line.innerHTML += `<div style="padding:4px 0;border-top:1px solid rgba(255,150,0,0.2)">`;
+      d.substeps.forEach((step, i) => {
+        line.innerHTML += `<div style="font-size:10px;color:var(--text3);line-height:1.6;padding:3px 0;margin-left:12px;font-family:'Courier New',monospace">• ${esc(step)}</div>`;
+      });
+      line.innerHTML += `</div>`;
+    }
+    line.innerHTML += `</div>`;
+  } else if (d.phase === "metrics") {
+    line.innerHTML = `<div style="padding:8px;background:rgba(0,200,100,0.08);border-radius:4px;border-left:4px solid var(--green);margin-top:6px">
+      <div style="font-weight:600;color:var(--green);margin-bottom:6px">📊 Loss Computation & Backprop</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-family:monospace">${esc(d.detail)}</div>`;
+    if (d.substeps) {
+      line.innerHTML += `<div style="padding:4px 0;border-top:1px solid rgba(0,200,100,0.2)">`;
+      d.substeps.forEach((step, i) => {
+        line.innerHTML += `<div style="font-size:10px;color:var(--text3);line-height:1.6;padding:3px 0;margin-left:12px;font-family:'Courier New',monospace">• ${esc(step)}</div>`;
+      });
+      line.innerHTML += `</div>`;
+    }
+    line.innerHTML += `</div>`;
   } else if (d.phase === "sampling") {
-    line.innerHTML = `<span style="padding-left:20px;color:var(--text2)">↪ Sampling: <span class="feed-value">${d.replay_graphs}</span> replay graph(s) from memory (<span class="feed-value">${d.memory_total}</span> stored)</span>`;
+    line.innerHTML = `<span style="padding-left:20px;color:var(--text2);font-size:11px">↪ Memory sampling: <span class="feed-value">${d.replay_graphs}</span> graphs from <span class="feed-value">${d.memory_total}</span> stored</span>`;
   } else if (d.phase === "combining") {
-    line.innerHTML = `<span style="padding-left:20px;color:var(--text2)">⊕ Batch: <span class="feed-detail">${esc(d.detail)}</span></span>`;
+    line.innerHTML = `<span style="padding-left:20px;color:var(--text2);font-size:11px">⊕ Batch assembly: <span class="feed-detail">${esc(d.detail)}</span></span>`;
   } else if (d.phase === "memory_update") {
-    line.innerHTML = `<span style="padding-left:16px;color:var(--accent)">🗃 Memory: <span class="feed-detail">${esc(d.detail)}</span> <span class="sub-label">(${d.memory_size}/${d.memory_capacity})</span></span>`;
+    line.innerHTML = `<span style="padding-left:16px;color:var(--accent);font-size:11px">🗃 Memory: <span class="feed-detail">${esc(d.detail)}</span> <span style="color:var(--text3)">(${d.memory_size}/${d.memory_capacity})</span></span>`;
   } else if (d.phase === "chunk_done") {
-    line.innerHTML = `<span style="padding-left:16px;color:var(--green)">\u2714 Chunk ${d.chunk} complete \u2014 avg loss: <span class="feed-loss">${d.chunk_loss}</span> &nbsp;|&nbsp; Memory: <span class="feed-value">${d.memory_size}</span> graphs</span>`;
+    line.innerHTML = `<div style="padding:6px 8px;background:rgba(0,200,100,0.1);border-radius:4px;border-left:3px solid var(--green)">
+      <span style="color:var(--green);font-weight:600">✔ Chunk ${d.chunk} Complete</span>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">avg loss: <span style="color:var(--orange);font-weight:600">${d.chunk_loss}</span> | memory: <span class="feed-value">${d.memory_size}</span> graphs</div>
+    </div>`;
   }
 
   feed.appendChild(line);
@@ -814,10 +1199,87 @@ function onAttackProgress(d) {
   feed.appendChild(line);
   feed.scrollTop = feed.scrollHeight;
 }
+
+function onEffectiveConfig(d) {
+  const content = document.getElementById("step1Content");
+  if (!content) return;
+
+  const summary = `
+    <div class="prevention-card" style="margin-bottom:12px;">
+      <div class="atk-name">⚙️ Effective Runtime Configuration</div>
+      <div class="stats-row">
+        <div class="stat-pill"><span>Train:</span><span class="val">${d.train_duration}s</span></div>
+        <div class="stat-pill"><span>Test:</span><span class="val">${d.test_duration}s</span></div>
+        <div class="stat-pill"><span>Window:</span><span class="val">${d.window_size}s</span></div>
+        <div class="stat-pill"><span>Max Nodes:</span><span class="val">${d.max_nodes}</span></div>
+        <div class="stat-pill"><span>Epochs:</span><span class="val">${d.epochs}</span></div>
+        <div class="stat-pill"><span>LR:</span><span class="val">${d.learning_rate}</span></div>
+        <div class="stat-pill"><span>σ:</span><span class="val">${d.threshold_sigma}</span></div>
+      </div>
+    </div>`;
+
+  const existing = content.querySelector('.config-summary');
+  if (existing) existing.remove();
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'config-summary';
+  wrapper.innerHTML = summary;
+  content.insertBefore(wrapper, content.firstChild);
+}
+
+function onAVScanSummary(d) {
+  const resultsContainer = document.getElementById("step6Results");
+  if (!resultsContainer) return;
+
+  const riskLevel = d.infected.count > 0 ? "HIGH" : (d.error.count > 0 ? "MEDIUM" : "LOW");
+  const riskClass = d.infected.count > 0 ? "badge-critical" : (d.error.count > 0 ? "badge-medium" : "badge-normal");
+
+  let html = `
+    <div class="impact-section" style="margin-top:18px;">
+      <h4>🛡️ Antivirus Scan Summary</h4>
+      <div class="stats-row" style="margin-bottom:10px;">
+        <div class="stat-pill"><span>Engine:</span><span class="val">${esc(d.engine_version || 'Unavailable')}</span></div>
+        <div class="stat-pill"><span>Total Scanned:</span><span class="val">${d.total_scanned}</span></div>
+        <div class="stat-pill"><span>Risk:</span><span class="badge ${riskClass}">${riskLevel}</span></div>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-box"><div class="metric-value" style="color:var(--green)">${d.clean.count}</div><div class="metric-label">Clean (${d.clean.pct}%)</div></div>
+        <div class="metric-box"><div class="metric-value" style="color:var(--red)">${d.infected.count}</div><div class="metric-label">Infected (${d.infected.pct}%)</div></div>
+        <div class="metric-box"><div class="metric-value" style="color:var(--orange)">${d.error.count}</div><div class="metric-label">Errors (${d.error.pct}%)</div></div>
+        <div class="metric-box"><div class="metric-value">${d.missing.count}</div><div class="metric-label">Missing (${d.missing.pct}%)</div></div>
+      </div>`;
+
+  if (d.infected.files && d.infected.files.length) {
+    html += `<table class="impact-table" style="margin-top:12px;"><tr><th>Infected File</th><th>Signature</th><th>Attack Source</th></tr>`;
+    d.infected.files.forEach(file => {
+      html += `<tr><td class="file-path">${esc(file.path)}</td><td class="change-col">${esc(file.signature)}</td><td>${esc(file.attack)}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+
+  const recommendation = d.infected.count > 0
+    ? "Isolate infected files immediately and review malware signatures before continuing."
+    : (d.error.count > 0
+      ? "Some scans failed; retry scans and verify ClamAV engine configuration."
+      : "All scanned files are clean; continue normal monitoring.");
+
+  html += `<div class="prevention-card" style="margin-top:10px;"><strong>Recommendation:</strong> ${recommendation}</div></div>`;
+
+  const existing = resultsContainer.querySelector('.av-summary-block');
+  if (existing) existing.remove();
+
+  const block = document.createElement('div');
+  block.className = 'av-summary-block';
+  block.innerHTML = html;
+  resultsContainer.appendChild(block);
+}
+
 function onPipelineComplete(d) {
   const btn = document.getElementById("startBtn");
   btn.disabled = false;
   btn.textContent = "▶ Run Again";
+  showControlPanel();
+  enableControlPanel();
 
   document.getElementById("mainProgress").style.width = "100%";
   document.getElementById("progressLabel").textContent = `Pipeline complete in ${d.elapsed}s`;
@@ -840,6 +1302,8 @@ function onError(d) {
   const btn = document.getElementById("startBtn");
   btn.disabled = false;
   btn.textContent = "▶ Run Pipeline";
+  showControlPanel();
+  enableControlPanel();
   addLog("", "ERROR", d);
   if (evtSource) { evtSource.close(); evtSource = null; }
 }

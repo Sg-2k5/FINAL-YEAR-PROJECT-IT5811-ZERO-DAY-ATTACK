@@ -43,7 +43,7 @@ from src.detection.enhanced_detector import HybridDetector
 from src.detection.detector import AlertManager
 from src.visualization.graph_visualizer import GraphVisualizer
 from src.utils.alert_logger import AlertLogger
-from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av
+from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av, compute_av_summary
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -94,6 +94,70 @@ def filter_graph_for_viz(graph, max_nodes=50):
         if edge.source_id in top_ids and edge.target_id in top_ids:
             filt.add_edge(edge)
     return filt
+
+
+def print_av_summary(av_summary):
+    """Print a formatted AV scan summary section."""
+    print(f"\n  {'─' * 60}")
+    print(f"  ANTIVIRUS SCAN SUMMARY")
+    print(f"  {'─' * 60}")
+    
+    if not av_summary['av_available']:
+        print(f"  ⚠  ClamAV Engine: Not Available")
+        print(f"  Files Scanned: {av_summary['total_scanned']}")
+        return
+    
+    print(f"  Engine: {av_summary['engine_version']}")
+    print(f"  Total Files Scanned: {av_summary['total_scanned']}")
+    print()
+    
+    # Status breakdown
+    clean = av_summary['clean']
+    infected = av_summary['infected']
+    error = av_summary['error']
+    missing = av_summary['missing']
+    unavailable = av_summary['unavailable']
+    
+    print(f"  ✓ CLEAN       : {clean['count']:>4} ({clean['pct']:>5.1f}%)")
+    if infected['count'] > 0:
+        print(f"  🔴 INFECTED   : {infected['count']:>4} ({infected['pct']:>5.1f}%)  <- HIGH RISK")
+    else:
+        print(f"  ✓ INFECTED    : {infected['count']:>4} ({infected['pct']:>5.1f}%)")
+    if error['count'] > 0:
+        print(f"  ⚠  ERROR      : {error['count']:>4} ({error['pct']:>5.1f}%)  <- CHECK SCANS")
+    else:
+        print(f"  ✓ ERROR       : {error['count']:>4} ({error['pct']:>5.1f}%)")
+    if missing['count'] > 0:
+        print(f"  ◎ MISSING     : {missing['count']:>4} ({missing['pct']:>5.1f}%)  (created by attack)")
+    else:
+        print(f"  ✓ MISSING     : {missing['count']:>4} ({missing['pct']:>5.1f}%)")
+    if unavailable['count'] > 0:
+        print(f"  ? UNAVAILABLE : {unavailable['count']:>4} ({unavailable['pct']:>5.1f}%)  (not scanned)")
+    else:
+        print(f"  ✓ UNAVAILABLE : {unavailable['count']:>4} ({unavailable['pct']:>5.1f}%)")
+    
+    print()
+    
+    # Recommend action
+    if infected['count'] > 0:
+        print(f"  ⚠  RECOMMENDATION: HIGH RISK - Infected files detected!")
+        print(f"      Action: Isolate infected files, review signatures, remove malware")
+        print(f"\n  Infected Files:")
+        for inf in infected['files'][:10]:  # Show top 10
+            print(f"    • {inf['path']:<45} [{inf['signature']}]")
+        if len(infected['files']) > 10:
+            print(f"    ... and {len(infected['files']) - 10} more")
+    elif error['count'] > 0:
+        print(f"  ⚠  RECOMMENDATION: Medium Risk - Some scans failed")
+        print(f"      Action: Retry scans for error files, verify AV engine")
+    else:
+        print(f"  ✓ RECOMMENDATION: Low Risk - All files clean or unavailable")
+        print(f"      Action: Continue normal monitoring")
+    
+    print(f"  {'─' * 60}\n")
+
+
+
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -277,6 +341,10 @@ def run_pipeline():
         for fi in rpt.files_impacted:
                         print(f"      └─ {fi.path:<45} {fi.integrity_status} ({fi.change_summary}) | AV={fi.av_status or 'NOT_SCANNED'}")
 
+    # Print AV summary
+    av_summary = compute_av_summary(attack_reports, scanner=av_scanner)
+    print_av_summary(av_summary)
+
     # ──────────────────────────────────────────────────────────
     # 7. Detect anomalies on attacks
     # ──────────────────────────────────────────────────────────
@@ -380,6 +448,15 @@ def run_pipeline():
     auc = float(np.trapezoid(tpr_s, fpr_s))
 
     print(f"  AUC : {auc:.3f}")
+    print("\n  Step 8 Explanation (Technical, Simple):")
+    print("  • Precision = TP/(TP+FP): reliability of anomaly alerts (low false-positive tendency).")
+    print("  • Recall (TPR) = TP/(TP+FN): attack coverage, i.e., how many true attacks were caught.")
+    print("  • F1 Score: harmonic mean of Precision and Recall; balanced quality indicator.")
+    print("  • Accuracy = (TP+TN)/N: overall correctness on both normal and attack samples.")
+    print("  • AUC: threshold-independent separability between normal and attack anomaly scores.")
+    print("  • Confusion Matrix graph: TP/TN are correct decisions; FP/FN are error modes.")
+    print("  • ROC graph: closer to top-left is better discrimination; diagonal is random baseline.")
+    print("  • Score Distribution graph: lower overlap between Normal and Attack histograms indicates better separation.")
 
     # ──────────────────────────────────────────────────────────
     # 9. Generate visualizations
@@ -416,9 +493,10 @@ def run_pipeline():
         attack_g = filter_graph_for_viz(attack_graphs[0])
         n_score = real_results[0].anomaly_score if real_results else 0
         a_score = attack_results[0].anomaly_score if attack_results else 0
+        decision_threshold = float(np.mean([r.threshold for r in all_det])) if all_det else 0.0
 
         fig = visualizer.visualize_graph_comparison(
-            normal_g, attack_g, n_score, a_score, threshold=2.5)
+            normal_g, attack_g, n_score, a_score, threshold=decision_threshold)
         fig.savefig("graph_normal_vs_attack.png", dpi=150, bbox_inches="tight", facecolor="white")
         plt.close(fig)
         print(f"  ✓ graph_normal_vs_attack.png")
@@ -440,7 +518,14 @@ def run_pipeline():
         axes[1].hist(normal_s, bins=20, alpha=0.6, color='#27ae60', label='Normal', edgecolor='black')
     if len(attack_s):
         axes[1].hist(attack_s, bins=20, alpha=0.6, color='#e74c3c', label='Attack', edgecolor='black')
-    axes[1].axvline(x=2.5, color='orange', linestyle='--', linewidth=2, label='Threshold')
+    decision_threshold = float(np.mean([r.threshold for r in all_det])) if all_det else 0.0
+    axes[1].axvline(
+        x=decision_threshold,
+        color='orange',
+        linestyle='--',
+        linewidth=2,
+        label=f'Decision Threshold ({decision_threshold:.2f})',
+    )
     axes[1].set_xlabel('Anomaly Score', fontsize=12)
     axes[1].set_ylabel('Count', fontsize=12)
     axes[1].set_title('Score Distribution', fontsize=14, fontweight='bold')
@@ -471,11 +556,23 @@ def run_pipeline():
     # ──────────────────────────────────────────────────────────
     print_step(11, TOTAL_STEPS, "EXPORTING RESULTS")
 
-    json_path = alert_logger.save_results_json(
-        all_det, alert_manager.alerts,
-        extra={"precision": round(precision, 4), "recall": round(recall, 4),
-               "f1": round(f1, 4), "accuracy": round(accuracy, 4), "auc": round(auc, 4)})
-    csv_path = alert_logger.save_results_csv(all_det)
+    export_extra = {
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "f1": round(f1, 4),
+        "accuracy": round(accuracy, 4),
+        "auc": round(auc, 4),
+        "av_available": av_summary["av_available"],
+        "av_engine": av_summary["engine_version"],
+        "av_total_scanned": av_summary["total_scanned"],
+        "av_clean_count": av_summary["clean"]["count"],
+        "av_infected_count": av_summary["infected"]["count"],
+        "av_error_count": av_summary["error"]["count"],
+        "av_missing_count": av_summary["missing"]["count"],
+        "av_unavailable_count": av_summary["unavailable"]["count"],
+    }
+    json_path = alert_logger.save_results_json(all_det, alert_manager.alerts, extra=export_extra)
+    csv_path = alert_logger.save_results_csv(all_det, extra=export_extra)
 
     print(f"  ✓ {json_path}")
     print(f"  ✓ {csv_path}")

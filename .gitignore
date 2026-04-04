@@ -1,0 +1,38 @@
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and data files
+logs/
+fyp2/logs/
+*.csv
+*.json
+*.txt
+_av_probe*
+
+# Image outputs
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ClamAV
+fyp2/.clamav/
+freshclam.conf
+
+# OS
+.DS_Store
+Thumbs.db

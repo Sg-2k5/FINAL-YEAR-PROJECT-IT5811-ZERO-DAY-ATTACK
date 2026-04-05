@@ -117,24 +117,29 @@ def print_av_summary(av_summary):
     error = av_summary['error']
     missing = av_summary['missing']
     unavailable = av_summary['unavailable']
+    not_applicable = av_summary.get('not_applicable', {'count': 0, 'pct': 0})
     
-    print(f"  ✓ CLEAN       : {clean['count']:>4} ({clean['pct']:>5.1f}%)")
+    print(f"  ✓ CLEAN            : {clean['count']:>4} ({clean['pct']:>5.1f}%)")
     if infected['count'] > 0:
-        print(f"  🔴 INFECTED   : {infected['count']:>4} ({infected['pct']:>5.1f}%)  <- HIGH RISK")
+        print(f"  🔴 INFECTED        : {infected['count']:>4} ({infected['pct']:>5.1f}%)  <- HIGH RISK")
     else:
-        print(f"  ✓ INFECTED    : {infected['count']:>4} ({infected['pct']:>5.1f}%)")
+        print(f"  ✓ INFECTED         : {infected['count']:>4} ({infected['pct']:>5.1f}%)")
     if error['count'] > 0:
-        print(f"  ⚠  ERROR      : {error['count']:>4} ({error['pct']:>5.1f}%)  <- CHECK SCANS")
+        print(f"  ⚠  ERROR           : {error['count']:>4} ({error['pct']:>5.1f}%)  <- CHECK SCANS")
     else:
-        print(f"  ✓ ERROR       : {error['count']:>4} ({error['pct']:>5.1f}%)")
+        print(f"  ✓ ERROR            : {error['count']:>4} ({error['pct']:>5.1f}%)")
     if missing['count'] > 0:
-        print(f"  ◎ MISSING     : {missing['count']:>4} ({missing['pct']:>5.1f}%)  (created by attack)")
+        print(f"  ◎ MISSING          : {missing['count']:>4} ({missing['pct']:>5.1f}%)  (created by attack)")
     else:
-        print(f"  ✓ MISSING     : {missing['count']:>4} ({missing['pct']:>5.1f}%)")
+        print(f"  ✓ MISSING          : {missing['count']:>4} ({missing['pct']:>5.1f}%)")
+    if not_applicable['count'] > 0:
+        print(f"  ⊘ NOT_APPLICABLE   : {not_applicable['count']:>4} ({not_applicable['pct']:>5.1f}%)  (modified by attack)")
+    else:
+        print(f"  ✓ NOT_APPLICABLE   : {not_applicable['count']:>4} ({not_applicable['pct']:>5.1f}%)")
     if unavailable['count'] > 0:
-        print(f"  ? UNAVAILABLE : {unavailable['count']:>4} ({unavailable['pct']:>5.1f}%)  (not scanned)")
+        print(f"  ? UNAVAILABLE      : {unavailable['count']:>4} ({unavailable['pct']:>5.1f}%)  (not scanned)")
     else:
-        print(f"  ✓ UNAVAILABLE : {unavailable['count']:>4} ({unavailable['pct']:>5.1f}%)")
+        print(f"  ✓ UNAVAILABLE      : {unavailable['count']:>4} ({unavailable['pct']:>5.1f}%)")
     
     print()
     

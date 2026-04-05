@@ -192,7 +192,11 @@ def compute_av_summary(reports: Iterable, scanner: Optional[ClamAVScanner] = Non
     # Aggregate stats from all impacts
     for report in reports:
         for impact in report.files_impacted:
-            status = impact.av_status or 'UNAVAILABLE'
+            # Normalize status: 'NOT_SCANNED' (default) should be treated as 'UNAVAILABLE'
+            status = impact.av_status
+            if status == 'NOT_SCANNED' or not status:
+                status = 'UNAVAILABLE'
+            
             counts[status] = counts.get(status, 0) + 1
             
             if status == 'INFECTED':

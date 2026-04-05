@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
 
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 
 # Suppress werkzeug request logs so terminal output stays clean
 logging.basicConfig(level=logging.WARNING)
@@ -43,7 +43,7 @@ from src.detection.enhanced_detector import HybridDetector
 from src.detection.detector import AlertManager
 from src.visualization.graph_visualizer import GraphVisualizer
 from src.utils.alert_logger import AlertLogger
-from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av
+from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av, compute_av_summary
 
 app = Flask(__name__)
 
@@ -52,6 +52,22 @@ event_history = []          # all events from current/last run
 event_lock = threading.Lock()
 event_condition = threading.Condition()
 pipeline_running = False
+
+# Pipeline configuration (session-scoped, defaults provided)
+pipeline_config = {
+    'train_duration': 20,
+    'test_duration': 15,
+    'polling_interval': 0.3,
+    'window_size': 5,
+    'max_nodes': 500,
+    'filter_system_noise': False,
+    'epochs': 30,
+    'learning_rate': 0.01,
+    'dropout': 0.2,
+    'threshold_sigma': 2.5,
+    'replay_ratio': 0.5,
+    'memory_size': 64,
+}
 
 
 # ── Terminal formatting helpers ──
@@ -126,7 +142,7 @@ def filter_graph_for_viz(graph, max_nodes=50):
 
 def run_pipeline_thread():
     """Run pipeline in background thread, pushing SSE events at each step."""
-    global pipeline_running
+    global pipeline_running, pipeline_config
     pipeline_running = True
     start_time = time.time()
 
@@ -134,19 +150,33 @@ def run_pipeline_thread():
         print(f"\n{GREEN}{'╔'+'═'*58+'╗'}{RESET}")
         print(f"{GREEN}║{RESET}{BOLD}  Zero-Day Detection Pipeline — STARTED{' '*19}{RESET}{GREEN}║{RESET}")
         print(f"{GREEN}{'╚'+'═'*58+'╝'}{RESET}\n")
+        
+        # Emit effective configuration
+        send_event("effective_config", {
+            "train_duration": pipeline_config['train_duration'],
+            "test_duration": pipeline_config['test_duration'],
+            "polling_interval": pipeline_config['polling_interval'],
+            "window_size": pipeline_config['window_size'],
+            "max_nodes": pipeline_config['max_nodes'],
+            "epochs": pipeline_config['epochs'],
+            "learning_rate": pipeline_config['learning_rate'],
+            "threshold_sigma": pipeline_config['threshold_sigma'],
+            "replay_ratio": pipeline_config['replay_ratio'],
+        })
 
         # ── Step 1: Collect normal events ──
         print_header(1, "COLLECTING NORMAL SYSTEM EVENTS")
-        tprint("Monitoring processes, files & network for 20 seconds...", DIM)
-        send_event("step_start", {"step": 1, "title": "Collecting Normal System Events", "desc": "Monitoring processes, files & network for 20 seconds..."})
+        duration_desc = f"Monitoring processes, files & network for {pipeline_config['train_duration']} seconds..."
+        tprint(duration_desc, DIM)
+        send_event("step_start", {"step": 1, "title": "Collecting Normal System Events", "desc": duration_desc})
 
         collector = RealTimeCollector(monitor_processes=True, monitor_files=True,
-                                     monitor_network=True, polling_interval=0.3)
+                                     monitor_network=True, polling_interval=pipeline_config['polling_interval'])
 
         # Stream collection progress
         train_events = []
         collection_start = time.time()
-        duration = 20
+        duration = pipeline_config['train_duration']
         while time.time() - collection_start < duration:
             batch = collector.collect_events(duration_seconds=2)
             train_events.extend(batch)
@@ -194,8 +224,8 @@ def run_pipeline_thread():
         tprint("Converting events into time-windowed graphs...", DIM)
         send_event("step_start", {"step": 2, "title": "Building Behavioral Graphs", "desc": "Converting events into time-windowed graphs..."})
 
-        builder = GraphBuilder(window_size_seconds=5, min_events_per_graph=1,
-                               max_nodes_per_graph=500, filter_system_noise=False)
+        builder = GraphBuilder(window_size_seconds=pipeline_config['window_size'], min_events_per_graph=1,
+                       max_nodes_per_graph=pipeline_config['max_nodes'], filter_system_noise=pipeline_config['filter_system_noise'])
 
         # Graph building intermediate steps
         send_event("graph_build_step", {"phase": "init", "detail": f"Starting graph construction from {len(train_events)} collected events"})
@@ -254,26 +284,29 @@ def run_pipeline_thread():
 
         # ── Step 3: Train autoencoder ──
         print_header(3, "TRAINING GRAPH AUTOENCODER")
-        tprint("GCN Architecture: 6D → 32D → 16D  |  30 epochs  |  lr=0.01", DIM)
+        tprint(
+            f"GCN Architecture: 6D → 32D → 16D  |  {pipeline_config['epochs']} epochs  |  lr={pipeline_config['learning_rate']}",
+            DIM,
+        )
         send_event("step_start", {"step": 3, "title": "Training Graph Autoencoder", "desc": "Learning normal behavior patterns..."})
 
-        model = GraphAutoencoder(hidden_dim=32, latent_dim=16, dropout=0.2)
-        trainer = Trainer(model, learning_rate=0.01)
+        model = GraphAutoencoder(hidden_dim=32, latent_dim=16, dropout=pipeline_config['dropout'])
+        trainer = Trainer(model, learning_rate=pipeline_config['learning_rate'])
 
         # Train with progress
         from src.models.autoencoder import graph_to_pyg_data
         train_data = [graph_to_pyg_data(g) for g in train_graphs]
         import torch
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+        optimizer = torch.optim.Adam(model.parameters(), lr=pipeline_config['learning_rate'])
 
-        epochs = 30
+        epochs = pipeline_config['epochs']
 
         # GCN architecture walk-through — shown once before training starts
         send_event("gcn_substep", {"phase": "arch_init",
-            "detail": f"Model ready: {len(train_data)} training graph(s) | {epochs} epochs | lr=0.01 | input 6D"})
+            "detail": f"Model ready: {len(train_data)} training graph(s) | {epochs} epochs | lr={pipeline_config['learning_rate']} | input 6D"})
         time.sleep(0.3)
         send_event("gcn_substep", {"phase": "arch_l1",
-            "detail": "GCN Conv1: each node aggregates 1-hop neighbour features → 32D hidden repr  +  ReLU  +  Dropout(0.2)"})
+            "detail": f"GCN Conv1: each node aggregates 1-hop neighbour features → 32D hidden repr  +  ReLU  +  Dropout({pipeline_config['dropout']})"})
         time.sleep(0.2)
         send_event("gcn_substep", {"phase": "arch_l2",
             "detail": "GCN Conv2: 32D hidden → 16D latent embedding Z  (compact graph representation)"})
@@ -357,7 +390,7 @@ def run_pipeline_thread():
         print_result("Std deviation    (σ)", f"{std_loss:.6f}")
         print_result("Threshold    (μ+3σ)", f"{threshold:.6f}")
 
-        detector = HybridDetector(gae_model=model, threshold_sigma=2.5)
+        detector = HybridDetector(gae_model=model, threshold_sigma=pipeline_config['threshold_sigma'])
         detector.fit(train_graphs)
 
         # ── Step 4: Continual learning adaptation ──
@@ -368,8 +401,8 @@ def run_pipeline_thread():
         continual = ContinualLearner(
             model=model,
             learning_rate=0.001,
-            replay_ratio=0.5,
-            memory_size=64,
+            replay_ratio=pipeline_config['replay_ratio'],
+            memory_size=pipeline_config['memory_size'],
             replay_batch_cap=12,
             inner_epochs=2,
         )
@@ -394,6 +427,49 @@ def run_pipeline_thread():
                 "detail": f"Randomly sampled {replay_size} graph(s) from memory bank  ({mem_now} stored)"
             })
             time.sleep(0.2)
+
+            # Detailed graph conversion analysis
+            from src.models.autoencoder import graph_to_pyg_data
+            chunk = train_graphs[chunk_idx * 3:(chunk_idx + 1) * 3] if chunk_idx * 3 < len(train_graphs) else train_graphs[-chunk_size:]
+            replay_batch = continual.memory_graphs[-replay_size:] if replay_size > 0 else []
+            training_batch = chunk + replay_batch
+
+            for g_idx, graph in enumerate(training_batch):
+                pyg_data = graph_to_pyg_data(graph)
+                num_nodes = pyg_data.num_nodes
+                num_edges = pyg_data.edge_index.shape[1]
+
+                is_replay = g_idx >= chunk_size
+                send_event("cl_progress", {
+                    "phase": "graph_structure",
+                    "chunk": chunk_idx + 1,
+                    "graph_id": g_idx + 1,
+                    "is_replay": is_replay,
+                    "num_nodes": num_nodes,
+                    "num_edges": num_edges,
+                    "detail": f"Graph {g_idx + 1} ({['NEW', 'REPLAY'][is_replay]}): {num_nodes} nodes, {num_edges} edges"
+                })
+                time.sleep(0.1)
+
+                send_event("cl_progress", {
+                    "phase": "node_features",
+                    "chunk": chunk_idx + 1,
+                    "graph_id": g_idx + 1,
+                    "feature_dim": pyg_data.x.shape[1],
+                    "num_nodes": num_nodes,
+                    "detail": f"Node Features: {num_nodes}×6D matrix ([type(3D)|degree(2D)|temporal(1D)])"
+                })
+                time.sleep(0.1)
+
+                send_event("cl_progress", {
+                    "phase": "edge_structure",
+                    "chunk": chunk_idx + 1,
+                    "graph_id": g_idx + 1,
+                    "num_edges": num_edges,
+                    "detail": f"Edge Index: (2, {num_edges}) sparse adjacency tensor"
+                })
+                time.sleep(0.1)
+
             send_event("cl_progress", {
                 "phase": "combining",
                 "chunk": chunk_idx + 1,
@@ -404,13 +480,67 @@ def run_pipeline_thread():
 
         def _cl_epoch_done(chunk_idx, epoch, loss):
             tprint(f"    Epoch {epoch+1}/2  loss={loss:.6f}", DIM)
+
+            # Show geometrical data conversion step with detailed structure
             send_event("cl_progress", {
-                "phase": "epoch",
+                "phase": "geometric_conversion",
+                "chunk": chunk_idx + 1,
+                "epoch": epoch + 1,
+                "detail": "Converting behavior graphs to PyG format (node features 6D: [type_encoding(3D) + degree_features(3D)])",
+                "substeps": [
+                    "Graph → PyG Data: Extract nodes (PROCESS, FILE, SOCKET)",
+                    "Node Features: [one_hot_type(3D) + in_degree + out_degree + temporal_activity]",
+                    "Edge Index: Directed edges (EXECUTES, READS, WRITES, SPAWNS, CONNECTS)",
+                    "Result: Sparse tensor format (x ∈ ℝ^(N×6), edge_index ∈ ℤ^(2×E))"
+                ]
+            })
+            time.sleep(0.2)
+
+            # Show encoding step with layer details
+            send_event("cl_progress", {
+                "phase": "encoding",
+                "chunk": chunk_idx + 1,
+                "epoch": epoch + 1,
+                "detail": "GCN Encoder: Layer1(6D→32D) + Layer2(32D→16D) ➜ 16D latent embeddings",
+                "substeps": [
+                    "Layer 1: Conv(6D→32D) | x₁ = ReLU(Ŵ·x₀) where Ŵ = D̂⁻½ÂD̂⁻½",
+                    "Layer 2: Conv(32D→16D) | z = ReLU(Ŵ·x₁) | Node embeddings ∈ ℝ^(N×16)",
+                    "Latent Space: 16D continuous representation per node",
+                    "Graph Encoding: Z = [z₁, z₂, ..., zₙ] ∈ ℝ^(N×16)"
+                ]
+            })
+            time.sleep(0.2)
+
+            # Show decoding step with reconstruction details
+            send_event("cl_progress", {
+                "phase": "decoding",
+                "chunk": chunk_idx + 1,
+                "epoch": epoch + 1,
+                "detail": "Inner Product Decoder: z_i·z_j ➜ Adjacency reconstruction",
+                "substeps": [
+                    "Latent Product: Â = sigmoid(Z·Z^T) ∈ [0,1]^(N×N)",
+                    "Edge Prediction: (i,j) predicted edge weight = sigmoid(z_i·z_j)",
+                    "Reconstruction: n² predictions for complete adjacency matrix",
+                    "Target: Original sparse adjacency matrix (one-hot edges)"
+                ]
+            })
+            time.sleep(0.2)
+
+            # Show metrics calculation with loss breakdown
+            send_event("cl_progress", {
+                "phase": "metrics",
                 "chunk": chunk_idx + 1,
                 "epoch": epoch + 1,
                 "loss": round(loss, 6),
+                "detail": f"MSE Reconstruction Loss: {loss:.6f}",
+                "substeps": [
+                    f"Batch MSE = Σ(A_true - Â)² / (N×N)",
+                    f"Per-graph loss normalized: {loss:.6f} (lower is better)",
+                    f"Gradient backprop: ∇L w.r.t. model params",
+                    f"Params updated via Adam optimizer (lr=0.001)"
+                ]
             })
-            time.sleep(0.4)
+            time.sleep(0.1)
 
         def _cl_chunk_done(chunk_idx, chunk_loss, mem_size):
             tprint(f"  ✓ Chunk {chunk_idx} done — loss={chunk_loss:.6f}, memory={mem_size}", DIM)
@@ -451,12 +581,13 @@ def run_pipeline_thread():
 
         # ── Step 5: Collect test data ──
         print_header(5, "COLLECTING & TESTING REAL DATA")
-        tprint("Monitoring for new activity (15 seconds)...", DIM)
-        send_event("step_start", {"step": 5, "title": "Collecting Real Test Data", "desc": "Monitoring for new activity (15 seconds)..."})
+        test_desc = f"Monitoring for new activity ({pipeline_config['test_duration']} seconds)..."
+        tprint(test_desc, DIM)
+        send_event("step_start", {"step": 5, "title": "Collecting Real Test Data", "desc": test_desc})
 
         test_events = []
         collection_start = time.time()
-        duration = 15
+        duration = pipeline_config['test_duration']
         while time.time() - collection_start < duration:
             batch = collector.collect_events(duration_seconds=2)
             test_events.extend(batch)
@@ -586,6 +717,10 @@ def run_pipeline_thread():
         # Ensure every report has AV scan metadata for step summaries.
         annotate_attack_reports_with_av(attack_reports, Path(sandbox_path), scanner=av_scanner)
 
+        # Compute and emit AV summary
+        av_summary = compute_av_summary(attack_reports, scanner=av_scanner)
+        send_event("av_scan_summary", av_summary)
+
         # Also generate simulated events for graph building
         simulator = EnhancedAttackSimulator()
         sim_attack_types = {
@@ -699,8 +834,12 @@ def run_pipeline_thread():
 
         # ── Step 8: Compute metrics ──
         print_header(8, "COMPUTING DETECTION METRICS")
-        tprint("Calculating precision, recall, F1, ROC...", DIM)
-        send_event("step_start", {"step": 8, "title": "Computing Detection Metrics", "desc": "Calculating precision, recall, F1, ROC..."})
+        tprint("Calculating confusion-matrix metrics, ROC characteristics, and AUC separability...", DIM)
+        send_event("step_start", {
+            "step": 8,
+            "title": "Computing Detection Metrics",
+            "desc": "Deriving TP/FP/FN/TN, Precision-Recall-F1, ROC curve, and AUC to quantify detector performance."
+        })
         y_true = np.array([0] * len(real_results) + [1] * len(attack_results))
         all_det = real_results + attack_results
         scores = np.array([r.anomaly_score for r in all_det])
@@ -745,7 +884,9 @@ def run_pipeline_thread():
             axes[1].hist(normal_s, bins=15, alpha=0.6, color="#27ae60", label="Normal", edgecolor="black")
         if len(attack_s):
             axes[1].hist(attack_s, bins=15, alpha=0.6, color="#e74c3c", label="Attack", edgecolor="black")
-        axes[1].axvline(x=2.5, color="orange", linestyle="--", linewidth=2, label="Threshold")
+        decision_threshold = float(np.mean([r.threshold for r in all_det])) if all_det else 0.0
+        axes[1].axvline(x=decision_threshold, color="orange", linestyle="--", linewidth=2,
+                label=f"Decision Threshold ({decision_threshold:.2f})")
         axes[1].set_xlabel("Anomaly Score"); axes[1].set_ylabel("Count")
         axes[1].set_title("Score Distribution"); axes[1].legend(); axes[1].grid(True, alpha=0.3)
         plt.tight_layout()
@@ -775,6 +916,7 @@ def run_pipeline_thread():
                 "f1": round(f1 * 100, 1),
                 "accuracy": round(accuracy * 100, 1),
                 "auc": round(auc, 3),
+                "decision_threshold": round(decision_threshold, 4),
                 "metrics_image": metrics_img,
                 "cm_image": cm_img
             }
@@ -835,11 +977,23 @@ def run_pipeline_thread():
         # ── Step 11: Export Results ──
         print_header(11, "EXPORTING RESULTS")
         tprint("Saving detection results to JSON and CSV...", DIM)
-        json_path = alert_logger.save_results_json(
-            all_det, alert_manager.alerts,
-            extra={"precision": round(precision, 4), "recall": round(recall, 4),
-                   "f1": round(f1, 4), "accuracy": round(accuracy, 4), "auc": round(auc, 4)})
-        csv_path = alert_logger.save_results_csv(all_det)
+        export_extra = {
+            "precision": round(precision, 4),
+            "recall": round(recall, 4),
+            "f1": round(f1, 4),
+            "accuracy": round(accuracy, 4),
+            "auc": round(auc, 4),
+            "av_available": av_summary["av_available"],
+            "av_engine": av_summary["engine_version"],
+            "av_total_scanned": av_summary["total_scanned"],
+            "av_clean_count": av_summary["clean"]["count"],
+            "av_infected_count": av_summary["infected"]["count"],
+            "av_error_count": av_summary["error"]["count"],
+            "av_missing_count": av_summary["missing"]["count"],
+            "av_unavailable_count": av_summary["unavailable"]["count"],
+        }
+        json_path = alert_logger.save_results_json(all_det, alert_manager.alerts, extra=export_extra)
+        csv_path = alert_logger.save_results_csv(all_det, extra=export_extra)
         tprint(f"  ✓ {json_path}", GREEN)
         tprint(f"  ✓ {csv_path}", GREEN)
         tprint(f"{GREEN}✓ Step 11 complete{RESET}")
@@ -882,9 +1036,43 @@ def index():
 
 @app.route("/start", methods=["POST"])
 def start_pipeline():
-    global pipeline_running
+    global pipeline_running, pipeline_config
     if pipeline_running:
         return jsonify({"status": "already_running"}), 409
+    
+    # Parse training configuration from request (JSON or form data)
+    data = request.get_json(silent=True) or request.form.to_dict()
+    
+    # Update pipeline config with user-provided values (with validation/coercion)
+    try:
+        if 'train_duration' in data:
+            pipeline_config['train_duration'] = max(5, min(60, int(data['train_duration'])))
+        if 'test_duration' in data:
+            pipeline_config['test_duration'] = max(5, min(60, int(data['test_duration'])))
+        if 'polling_interval' in data:
+            pipeline_config['polling_interval'] = max(0.1, min(1.0, float(data['polling_interval'])))
+        if 'window_size' in data:
+            pipeline_config['window_size'] = max(1, min(30, int(data['window_size'])))
+        if 'max_nodes' in data:
+            pipeline_config['max_nodes'] = max(100, min(1000, int(data['max_nodes'])))
+        if 'filter_system_noise' in data:
+            raw = data['filter_system_noise']
+            pipeline_config['filter_system_noise'] = str(raw).lower() in ("1", "true", "yes", "on")
+        if 'epochs' in data:
+            pipeline_config['epochs'] = max(10, min(100, int(data['epochs'])))
+        if 'learning_rate' in data:
+            pipeline_config['learning_rate'] = max(0.001, min(0.1, float(data['learning_rate'])))
+        if 'dropout' in data:
+            pipeline_config['dropout'] = max(0.0, min(0.5, float(data['dropout'])))
+        if 'threshold_sigma' in data:
+            pipeline_config['threshold_sigma'] = max(1.5, min(4.0, float(data['threshold_sigma'])))
+        if 'replay_ratio' in data:
+            pipeline_config['replay_ratio'] = max(0.2, min(0.8, float(data['replay_ratio'])))
+        if 'memory_size' in data:
+            pipeline_config['memory_size'] = max(32, min(256, int(data['memory_size'])))
+    except (ValueError, TypeError):
+        return jsonify({"status": "invalid_config"}), 400
+    
     # Clear history for new run
     with event_lock:
         event_history.clear()

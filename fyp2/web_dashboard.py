@@ -45,13 +45,6 @@ from src.visualization.graph_visualizer import GraphVisualizer
 from src.utils.alert_logger import AlertLogger
 from src.utils.av_scanner import ClamAVScanner, annotate_attack_reports_with_av, compute_av_summary
 
-# Import Web Safety Checker
-import sys
-web_safety_path = str(Path(__file__).parent.parent)
-if web_safety_path not in sys.path:
-    sys.path.insert(0, web_safety_path)
-from web_safety_checker import WebSafetyChecker
-
 app = Flask(__name__)
 
 # Global event storage — thread-safe list + condition for multi-consumer SSE
@@ -1122,171 +1115,11 @@ def status():
     return jsonify({"running": pipeline_running})
 
 
-@app.route("/api/check-url", methods=["POST"])
-def check_url():
-    """
-    Check if a URL is safe using Web Safety Checker.
-    
-    Request payload:
-        {
-            "url": "https://example.com"
-        }
-    
-    Response:
-        {
-            "url": "https://example.com",
-            "status": "SAFE|WARNING|DANGEROUS|UNKNOWN",
-            "reason": "Human-readable explanation",
-            "confidence": 0.0-1.0,
-            "badge": {
-                "text": "SAFE/WARNING/DANGEROUS/UNKNOWN",
-                "color": "#hex",
-                "icon": "symbol",
-                "label": "description"
-            }
-        }
-    """
-    try:
-        data = request.get_json()
-        if not data or not data.get("url"):
-            return jsonify({"error": "Missing 'url' field"}), 400
-        
-        url = data["url"].strip()
-        checker = WebSafetyChecker()
-        verdict = checker.check_url(url)
-        badge = checker.get_safety_badge(verdict)
-        
-        return jsonify({
-            "url": url,
-            "status": verdict.status,
-            "reason": verdict.reason,
-            "confidence": verdict.confidence,
-            "av_status": verdict.av_status,
-            "badge": badge
-        })
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/check-file-type", methods=["POST"])
-def check_file_type():
-    """
-    Check if a file type is potentially dangerous.
-    
-    Request payload:
-        {
-            "filename": "document.pdf"
-        }
-    
-    Response:
-        {
-            "filename": "document.pdf",
-            "risk_level": "SAFE|WARNING|DANGEROUS",
-            "reason": "Human-readable explanation"
-        }
-    """
-    try:
-        data = request.get_json()
-        if not data or not data.get("filename"):
-            return jsonify({"error": "Missing 'filename' field"}), 400
-        
-        filename = data["filename"].strip()
-        checker = WebSafetyChecker()
-        risk_level, reason = checker.check_file_type(Path(filename))
-        
-        return jsonify({
-            "filename": filename,
-            "risk_level": risk_level,
-            "reason": reason
-        })
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/check-anomaly", methods=["POST"])
-def check_anomaly():
-    """
-    Comprehensive check for URLs and files - returns combined analysis.
-    
-    Request payload:
-        {
-            "url": "https://example.com",
-            "filename": "document.pdf"
-        }
-    
-    Response:
-        {
-            "url_check": {...},
-            "file_type_check": {...},
-            "combined_risk": "SAFE|WARNING|DANGEROUS",
-            "recommendation": "Action to take"
-        }
-    """
-    try:
-        data = request.get_json()
-        url = data.get("url", "").strip()
-        filename = data.get("filename", "").strip()
-        
-        if not url and not filename:
-            return jsonify({"error": "Provide at least 'url' or 'filename'"}), 400
-        
-        checker = WebSafetyChecker()
-        url_check = None
-        file_check = None
-        
-        # Check URL if provided
-        if url:
-            verdict = checker.check_url(url)
-            badge = checker.get_safety_badge(verdict)
-            url_check = {
-                "url": url,
-                "status": verdict.status,
-                "reason": verdict.reason,
-                "confidence": verdict.confidence,
-                "badge": badge
-            }
-        
-        # Check file type if provided
-        if filename:
-            risk_level, reason = checker.check_file_type(Path(filename))
-            file_check = {
-                "filename": filename,
-                "risk_level": risk_level,
-                "reason": reason
-            }
-        
-        # Combine risks
-        risks = []
-        if url_check:
-            risks.append(url_check["status"])
-        if file_check:
-            risks.append(file_check["risk_level"])
-        
-        # Determine combined risk (worst case wins)
-        risk_order = {"DANGEROUS": 3, "WARNING": 2, "SAFE": 1, "UNKNOWN": 0}
-        combined_risk = "UNKNOWN"
-        if risks:
-            combined_risk = max(risks, key=lambda r: risk_order.get(r, 0))
-        
-        # Generate recommendation
-        recommendations = {
-            "DANGEROUS": "🚫 BLOCK - File contains malware or URL is blacklisted. Do not open.",
-            "WARNING": "⚠️ CAUTION - Use with care. Verify source and purpose before opening.",
-            "SAFE": "✓ SAFE - File and URL appear safe. You can proceed.",
-            "UNKNOWN": "❓ UNKNOWN - Could not determine safety. Recommend using caution."
-        }
-        
-        return jsonify({
-            "url_check": url_check,
-            "file_type_check": file_check,
-            "combined_risk": combined_risk,
-            "recommendation": recommendations.get(combined_risk, "Unable to determine")
-        })
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == "__main__":

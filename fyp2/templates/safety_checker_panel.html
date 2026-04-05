@@ -1,0 +1,613 @@
+<!-- URL & File Safety Checker Panel - Integrate into Dashboard -->
+
+<style>
+  /* Safety Checker Panel */
+  .safety-checker-panel {
+    background: linear-gradient(135deg, #f0f8ff 0%, #f5faff 100%);
+    border: 2px solid #0066cc;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .safety-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .safety-panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0066cc;
+  }
+
+  .safety-panel-subtitle {
+    font-size: 13px;
+    color: #666666;
+    margin-left: 36px;
+    margin-top: -10px;
+  }
+
+  /* Input Section */
+  .safety-input-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .input-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 8px;
+  }
+
+  .input-group input {
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    transition: all 0.2s;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.2);
+  }
+
+  .check-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .btn-check {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+  }
+
+  .btn-check:hover {
+    background: #0052a3;
+    transform: translateY(-1px);
+  }
+
+  .btn-check:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Results Section */
+  .safety-results {
+    margin-top: 20px;
+    display: none;
+  }
+
+  .safety-results.show {
+    display: block;
+  }
+
+  /* Safety Card */
+  .safety-card {
+    background: white;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 4px solid;
+  }
+
+  .safety-card.safe {
+    border-left-color: #00aa00;
+    background: linear-gradient(to right, rgba(0, 170, 0, 0.05), white);
+  }
+
+  .safety-card.warning {
+    border-left-color: #ff8800;
+    background: linear-gradient(to right, rgba(255, 136, 0, 0.05), white);
+  }
+
+  .safety-card.dangerous {
+    border-left-color: #dd0000;
+    background: linear-gradient(to right, rgba(221, 0, 0, 0.05), white);
+  }
+
+  .safety-card.unknown {
+    border-left-color: #999999;
+    background: linear-gradient(to right, rgba(153, 153, 153, 0.05), white);
+  }
+
+  .safety-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .safety-badge.safe {
+    background: rgba(0, 170, 0, 0.15);
+    color: #00aa00;
+  }
+
+  .safety-badge.warning {
+    background: rgba(255, 136, 0, 0.15);
+    color: #ff8800;
+  }
+
+  .safety-badge.dangerous {
+    background: rgba(221, 0, 0, 0.15);
+    color: #dd0000;
+  }
+
+  .safety-badge.unknown {
+    background: rgba(153, 153, 153, 0.15);
+    color: #666666;
+  }
+
+  .safety-icon {
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .safety-info {
+    font-size: 13px;
+    color: #333333;
+  }
+
+  .safety-reason {
+    font-size: 12px;
+    color: #666666;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .safety-confidence {
+    font-size: 11px;
+    color: #999999;
+    margin-top: 6px;
+  }
+
+  .safety-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0066cc;
+    margin-top: 8px;
+  }
+
+  /* Recommendation */
+  .safety-recommendation {
+    background: #f9f9f9;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .recommendation-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 8px;
+  }
+
+  .recommendation-text {
+    font-size: 13px;
+    color: #666666;
+    line-height: 1.5;
+  }
+
+  /* Loading */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 102, 204, 0.2);
+    border-top-color: #0066cc;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Grid layout for URL and File */
+  .combined-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 800px) {
+    .safety-input-section {
+      grid-template-columns: 1fr;
+    }
+
+    .combined-results {
+      grid-template-columns: 1fr;
+    }
+
+    .check-buttons {
+      flex-direction: column;
+    }
+  }
+
+  /* Error message */
+  .safety-error {
+    background: rgba(221, 0, 0, 0.1);
+    border: 1px solid rgba(221, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 12px;
+    color: #dd0000;
+    font-size: 12px;
+  }
+
+  /* Inline check (quick check next to pipeline) */
+  .inline-safety-check {
+    background: white;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .inline-safety-check input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .inline-safety-check button {
+    padding: 8px 16px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .inline-safety-check button:hover {
+    background: #0052a3;
+  }
+</style>
+
+<!-- URL & File Safety Checker Panel -->
+<div class="safety-checker-panel" id="safetyCheckerPanel">
+  <div class="safety-panel-header">
+    <span style="font-size: 24px;">🛡️</span>
+    <div>
+      <div class="safety-panel-title">URL & File Safety Checker</div>
+      <div class="safety-panel-subtitle">Check if URLs and files are safe based on attack detection analysis</div>
+    </div>
+  </div>
+
+  <!-- Input Section -->
+  <div class="safety-input-section">
+    <div class="input-group">
+      <label for="urlInput">🔗 Enter URL to Check</label>
+      <input 
+        type="url" 
+        id="urlInput" 
+        placeholder="https://example.com"
+        disabled
+      >
+    </div>
+    <div class="input-group">
+      <label for="filenameInput">📄 Enter Filename to Check</label>
+      <input 
+        type="text" 
+        id="filenameInput" 
+        placeholder="document.pdf or script.exe"
+        disabled
+      >
+    </div>
+  </div>
+
+  <!-- Check Buttons -->
+  <div class="check-buttons">
+    <button class="btn-check" id="checkUrlBtn" disabled>Check URL</button>
+    <button class="btn-check" id="checkFileBtn" disabled>Check File Type</button>
+    <button class="btn-check" id="checkBothBtn" disabled>Check Both</button>
+  </div>
+
+  <!-- Results Section -->
+  <div class="safety-results" id="safetyResults">
+    <!-- URL Results -->
+    <div id="urlResultsContainer" class="combined-results" style="display: none;">
+      <div id="urlCard" class="safety-card"></div>
+    </div>
+
+    <!-- File Results -->
+    <div id="fileResultsContainer" class="combined-results" style="display: none;">
+      <div id="fileCard" class="safety-card"></div>
+    </div>
+
+    <!-- Combined Recommendation -->
+    <div id="recommendationContainer" style="display: none;">
+      <div class="safety-recommendation">
+        <div class="recommendation-title">📋 Combined Recommendation</div>
+        <div class="recommendation-text" id="recommendationText"></div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="safety-error" id="safetyError" style="display: none;"></div>
+  </div>
+</div>
+
+<!-- JavaScript for Safety Checker -->
+<script>
+// Initialize when pipeline starts
+function enableSafetyChecker() {
+  const inputs = ['urlInput', 'filenameInput'];
+  const buttons = ['checkUrlBtn', 'checkFileBtn', 'checkBothBtn'];
+  
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = false;
+  });
+  
+  buttons.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = false;
+  });
+}
+
+function disableSafetyChecker() {
+  const inputs = ['urlInput', 'filenameInput'];
+  const buttons = ['checkUrlBtn', 'checkFileBtn', 'checkBothBtn'];
+  
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+  
+  buttons.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+}
+
+// Wire up button click handlers
+document.addEventListener('DOMContentLoaded', () => {
+  const checkUrlBtn = document.getElementById('checkUrlBtn');
+  const checkFileBtn = document.getElementById('checkFileBtn');
+  const checkBothBtn = document.getElementById('checkBothBtn');
+  
+  if (checkUrlBtn) checkUrlBtn.addEventListener('click', () => checkURL());
+  if (checkFileBtn) checkFileBtn.addEventListener('click', () => checkFileType());
+  if (checkBothBtn) checkBothBtn.addEventListener('click', () => checkBoth());
+  
+  // Initially disable until pipeline starts
+  disableSafetyChecker();
+});
+
+async function checkURL() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) {
+    showSafetyError('Please enter a URL');
+    return;
+  }
+  
+  showLoading('URL');
+  hideSafetyError();
+  
+  try {
+    const response = await fetch('/api/check-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    
+    const data = await response.json();
+    displayURLResult(data);
+  } catch (e) {
+    showSafetyError(`Error checking URL: ${e.message}`);
+  }
+}
+
+async function checkFileType() {
+  const filename = document.getElementById('filenameInput').value.trim();
+  if (!filename) {
+    showSafetyError('Please enter a filename');
+    return;
+  }
+  
+  showLoading('File');
+  hideSafetyError();
+  
+  try {
+    const response = await fetch('/api/check-file-type', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename })
+    });
+    
+    const data = await response.json();
+    displayFileResult(data);
+  } catch (e) {
+    showSafetyError(`Error checking file: ${e.message}`);
+  }
+}
+
+async function checkBoth() {
+  const url = document.getElementById('urlInput').value.trim();
+  const filename = document.getElementById('filenameInput').value.trim();
+  
+  if (!url && !filename) {
+    showSafetyError('Please enter at least a URL or filename');
+    return;
+  }
+  
+  showLoading('Both');
+  hideSafetyError();
+  
+  try {
+    const response = await fetch('/api/check-anomaly', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, filename })
+    });
+    
+    const data = await response.json();
+    
+    // Display URL results if available
+    if (data.url_check) {
+      displayURLResult(data.url_check);
+    }
+    
+    // Display file results if available
+    if (data.file_type_check) {
+      displayFileResult(data.file_type_check);
+    }
+    
+    // Display recommendation
+    displayRecommendation(data);
+  } catch (e) {
+    showSafetyError(`Error checking: ${e.message}`);
+  }
+}
+
+function displayURLResult(data) {
+  const container = document.getElementById('urlResultsContainer');
+  const card = document.getElementById('urlCard');
+  
+  const status = data.status || 'UNKNOWN';
+  const badge = data.badge || {};
+  
+  const icons = { 'SAFE': '✓', 'WARNING': '⚠', 'DANGEROUS': '✗', 'UNKNOWN': '?' };
+  const icon = icons[status] || '?';
+  
+  let html = `
+    <div class="safety-card ${status.toLowerCase()}">
+      <div class="safety-badge ${status.toLowerCase()}">
+        <span class="safety-icon">${icon}</span>
+        <span>${badge.text || status}</span>
+      </div>
+      <div class="safety-info">
+        <strong>URL:</strong> ${escapeHtml(data.url)}
+      </div>
+      <div class="safety-reason">${escapeHtml(data.reason || '')}</div>
+      <div class="safety-confidence">Confidence: ${Math.round((data.confidence || 0) * 100)}%</div>
+      <div class="safety-label">${badge.label || ''}</div>
+    </div>
+  `;
+  
+  card.innerHTML = html;
+  container.style.display = 'block';
+  document.getElementById('safetyResults').classList.add('show');
+}
+
+function displayFileResult(data) {
+  const container = document.getElementById('fileResultsContainer');
+  const card = document.getElementById('fileCard');
+  
+  const risk = data.risk_level || 'UNKNOWN';
+  const icons = { 'SAFE': '✓', 'WARNING': '⚠', 'DANGEROUS': '✗', 'UNKNOWN': '?' };
+  const icon = icons[risk] || '?';
+  
+  let html = `
+    <div class="safety-card ${risk.toLowerCase()}">
+      <div class="safety-badge ${risk.toLowerCase()}">
+        <span class="safety-icon">${icon}</span>
+        <span>${risk}</span>
+      </div>
+      <div class="safety-info">
+        <strong>Filename:</strong> ${escapeHtml(data.filename)}
+      </div>
+      <div class="safety-reason">${escapeHtml(data.reason || '')}</div>
+    </div>
+  `;
+  
+  card.innerHTML = html;
+  container.style.display = 'block';
+  document.getElementById('safetyResults').classList.add('show');
+}
+
+function displayRecommendation(data) {
+  const container = document.getElementById('recommendationContainer');
+  const text = document.getElementById('recommendationText');
+  
+  text.textContent = data.recommendation || 'Unable to generate recommendation';
+  container.style.display = 'block';
+}
+
+function showLoading(type) {
+  const resultsDiv = document.getElementById('safetyResults');
+  resultsDiv.classList.add('show');
+  resultsDiv.innerHTML = `<div style="padding: 20px; text-align: center;">
+    <div class="spinner" style="margin: 0 auto; margin-bottom: 10px;"></div>
+    <div style="color: #666; font-size: 13px;">Checking ${type}...</div>
+  </div>`;
+}
+
+function showSafetyError(message) {
+  const errorDiv = document.getElementById('safetyError');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  document.getElementById('safetyResults').classList.add('show');
+}
+
+function hideSafetyError() {
+  const errorDiv = document.getElementById('safetyError');
+  errorDiv.style.display = 'none';
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Hook into pipeline events
+// When pipeline starts, enable the safety checker
+function setupSafetyCheckerHooks() {
+  // Override the startPipeline function to enable safety checker
+  const originalStartPipeline = window.startPipeline;
+  if (typeof originalStartPipeline === 'function') {
+    window.startPipeline = function() {
+      enableSafetyChecker();
+      return originalStartPipeline.apply(this, arguments);
+    };
+  }
+}
+
+setupSafetyCheckerHooks();
+</script>

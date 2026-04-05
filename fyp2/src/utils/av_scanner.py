@@ -167,6 +167,7 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
     Note: Files modified by the attack (encrypted, locked, etc.) are marked as 
     NOT_APPLICABLE since they may not be scannable. Only CLEAN/unchanged files are scanned.
     """
+    import sys
     scanner = scanner or ClamAVScanner()
 
     cache: Dict[str, AVScanVerdict] = {}
@@ -185,6 +186,7 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
                 impact.av_engine = "ClamAV"
                 impact.av_status = "NOT_APPLICABLE"  # File was modified by attack - not scannable
                 impact.av_signature = ""
+                print(f"[AV] SKIP (modified): {impact.path} ({impact.integrity_status}, affected={impact.affected_by_sha})", file=sys.stderr)
                 continue
 
             rel = impact.path
@@ -194,15 +196,18 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
                     # Handle both forward and backward slashes
                     normalized_rel = Path(rel)
                     full_path = sandbox_base / normalized_rel
+                    print(f"[AV] SCAN: {rel} -> {full_path} (exists={full_path.exists()})", file=sys.stderr)
                     cache[rel] = scanner.scan_file(full_path)
                 except Exception as e:
                     # If path construction fails, mark as error
+                    print(f"[AV] ERROR (path): {rel} -> {str(e)}", file=sys.stderr)
                     cache[rel] = AVScanVerdict(status="ERROR", raw_output=f"Path error: {str(e)}")
 
             verdict = cache[rel]
             impact.av_engine = verdict.engine
             impact.av_status = verdict.status
             impact.av_signature = verdict.signature
+            print(f"[AV] RESULT: {rel} -> {verdict.status}", file=sys.stderr)
 
 
 def compute_av_summary(reports: Iterable, scanner: Optional[ClamAVScanner] = None) -> Dict:

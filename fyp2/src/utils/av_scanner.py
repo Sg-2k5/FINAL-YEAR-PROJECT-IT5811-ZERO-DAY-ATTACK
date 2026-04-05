@@ -175,10 +175,15 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
 
     for report in reports:
         for impact in report.files_impacted:
+            # Debug: Show all files and their status
+            print(f"[AV_DEBUG] Processing: {impact.path}", file=sys.stderr)
+            print(f"[AV_DEBUG]   existed_after={impact.existed_after}, integrity_status={impact.integrity_status}, affected_by_sha={impact.affected_by_sha}", file=sys.stderr)
+            
             if not impact.existed_after:
                 impact.av_engine = "ClamAV"
                 impact.av_status = "MISSING"
                 impact.av_signature = ""
+                print(f"[AV_DEBUG]   -> MISSING (existed_after=False)", file=sys.stderr)
                 continue
 
             # Skip AV scanning for files modified by the attack (they may be encrypted/locked)
@@ -186,7 +191,7 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
                 impact.av_engine = "ClamAV"
                 impact.av_status = "NOT_APPLICABLE"  # File was modified by attack - not scannable
                 impact.av_signature = ""
-                print(f"[AV] SKIP (modified): {impact.path} ({impact.integrity_status}, affected={impact.affected_by_sha})", file=sys.stderr)
+                print(f"[AV_DEBUG]   -> NOT_APPLICABLE (modified/affected)", file=sys.stderr)
                 continue
 
             rel = impact.path
@@ -196,18 +201,18 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
                     # Handle both forward and backward slashes
                     normalized_rel = Path(rel)
                     full_path = sandbox_base / normalized_rel
-                    print(f"[AV] SCAN: {rel} -> {full_path} (exists={full_path.exists()})", file=sys.stderr)
+                    print(f"[AV_DEBUG]   -> SCANNING: {full_path}", file=sys.stderr)
                     cache[rel] = scanner.scan_file(full_path)
                 except Exception as e:
                     # If path construction fails, mark as error
-                    print(f"[AV] ERROR (path): {rel} -> {str(e)}", file=sys.stderr)
+                    print(f"[AV_DEBUG]   -> ERROR (exception): {str(e)}", file=sys.stderr)
                     cache[rel] = AVScanVerdict(status="ERROR", raw_output=f"Path error: {str(e)}")
 
             verdict = cache[rel]
             impact.av_engine = verdict.engine
             impact.av_status = verdict.status
             impact.av_signature = verdict.signature
-            print(f"[AV] RESULT: {rel} -> {verdict.status}", file=sys.stderr)
+            print(f"[AV_DEBUG]   -> RESULT: {verdict.status}", file=sys.stderr)
 
 
 def compute_av_summary(reports: Iterable, scanner: Optional[ClamAVScanner] = None) -> Dict:

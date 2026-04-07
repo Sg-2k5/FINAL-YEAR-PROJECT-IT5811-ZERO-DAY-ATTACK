@@ -1,0 +1,175 @@
+\chapter{SYSTEM OVERVIEW}
+\label{ch:system-design}
+
+\section{SYSTEM OVERVIEW}
+The system is designed as a modular pipeline that learns normal host behavior and
+flags abnormal behavior without relying on pre-labeled attacks. It continuously
+collects host activity, converts it into behavioral graphs, trains a graph
+autoencoder on normal graphs, and then scores new graphs for anomalies. The design
+emphasizes clear boundaries between modules so that data collection, graph
+construction, learning, detection, and evaluation can be improved independently.
+
+
+
+\section{SYSTEM ARCHITECTURE}
+Figure~\ref{fig:system-architecture} presents the end-to-end architecture, which facilitates a continuous flow from raw system events to real-time security insights. The pipeline begins with multi-source data ingestion, capturing process activities, file interactions, and network calls into an Event Buffer to manage high-throughput bursts. These events are passed to the Behavioral Graph Module, where a constructor maps entity interactions into structured representations and stores them in a Graph Repository for historical context.
+\\
+
+The core detection logic utilizes a Graph Feature Encoder to transform complex topologies into dense vectors for the Self-Supervised Learner. This learner identifies deviations from normal behavior, while a Continual Learning mechanism allows the model to adapt to new system states without manual retraining. Finally, a Trust Scoring module filters activities, passing "Unknown" threats through the Zero-Day Detection Engine for visualization on the Insights Dashboard, while known threats are cross-referenced with a Threat Database.
+
+
+
+
+\begin{landscape}
+
+\thispagestyle{plain} % keeps page number bottom-right only for this page
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\linewidth,height=0.9\textheight,keepaspectratio]{\detokenize{final.drawio.png}}
+    \caption{\textbf{Overall system architecture for the zero-day detection pipeline.}}
+
+    \label{fig:system-architecture}
+\end{figure}
+
+\end{landscape}
+
+\clearpage
+
+
+This architecture view provides the reference flow for the module descriptions
+that follow.
+
+\section{MODULE DESCRIPTION}
+\subsection{System Monitoring and Data Collection}
+The data collection module is responsible for observing real host activity. It
+captures process actions, file access, and network activity at fixed intervals
+and converts them into a common event format. The output is a clean stream of
+normalized events that can be consumed by the graph builder.
+
+The figure 3.2 shows the flow from system sources through the collector into a
+normalized event stream.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[angle=0,origin=c,height=0.55\textheight,keepaspectratio]{\detokenize{system monitoring module.png}}
+	\caption{System monitoring pipeline that produces normalized raw events.}
+	\label{fig:system-monitoring}
+\end{figure}
+
+This module establishes the raw event stream used by all downstream stages.
+
+\subsection{Behavioral Graph Construction}
+The graph construction module groups events into time windows and converts each
+window into a behavioral graph. Nodes represent processes, files, and sockets.
+Edges represent interactions such as executes, reads, writes, spawns, and
+connects. Node features are derived from type and connectivity statistics so the
+model can learn structure as well as activity intensity.
+
+The figure 3.3 outlines how events are grouped into windows and converted into nodes,
+edges, and feature vectors.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.95\textwidth,height=0.68\textheight,keepaspectratio]{\detokenize{behavioural graph constructor.png}}
+	\caption{Behavioral graph construction workflow with preprocessing and feature creation.}
+	\label{fig:graph-construction}
+\end{figure}
+
+It shows the transformation from events to structured graphs used for learning.
+
+\subsection{Graph Autoencoder Training and Baseline}
+The learning module trains a graph autoencoder only on normal graphs. The encoder
+compresses each graph into a latent representation using GCN layers, while the
+decoder reconstructs the adjacency structure. Reconstruction error becomes the
+anomaly signal. The training output includes the mean and standard deviation of
+errors, which define the baseline threshold for detection.
+
+The figure 3.4 highlights the encoder--decoder flow and how the baseline statistics
+are derived from reconstruction error.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.95\textwidth,height=0.68\textheight,keepaspectratio]{\detokenize{autoencoder and learner.png}}
+	\caption{Graph autoencoder training pipeline and baseline statistics computation.}
+	\label{fig:autoencoder-pipeline}
+\end{figure}
+
+This diagram clarifies how the baseline threshold is computed from normal data.
+
+\subsection{Detection and Alerting}
+During detection, each new graph is passed through the trained autoencoder to
+compute a reconstruction score. If the score exceeds the learned threshold, the
+graph is flagged as anomalous and an alert is created with severity information.
+This module also records detection results for reporting and analysis.
+
+\subsection{Attack Simulation and Evaluation}
+To validate detection behavior, the system includes an attack simulator that
+generates synthetic streams for common attack categories. These events are merged
+with normal activity and converted to graphs so the detector can be evaluated
+under controlled conditions.
+
+The figure 3.5 shows how normal and simulated attack streams are combined before
+graph conversion and scoring.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.95\textwidth,height=0.68\textheight,keepaspectratio]{\detokenize{attack simulator.png}}
+	\caption{Attack simulation pipeline for controlled evaluation.}
+	\label{fig:attack-simulator}
+\end{figure}
+
+The simulated streams ensure repeatable and measurable detection tests.
+
+\subsection{Continual Learning Adaptation}
+
+To handle evolving system behavior, the architecture incorporates a continual
+learning mechanism that updates the model incrementally as new behavioral graphs
+arrive. Incoming graphs are processed in small chunks and combined with samples
+from a replay memory to retain previously learned patterns.
+
+The figure 3.6 illustrates the continual learning workflow, including stream
+chunking, replay memory usage, and incremental model updates.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.80\textwidth,height=0.55\textheight,keepaspectratio]{\detokenize{continual.drawio.png}}
+	\caption{Continual learning pipeline for incremental model adaptation.}
+	\label{fig:continual-learning}
+\end{figure}
+
+This approach allows the model to adapt to new behavior while maintaining
+knowledge of earlier patterns.
+\newpage
+\subsection{Visualization and Reporting}
+The visualization module provides graph views and summary plots that allow a
+reviewer to compare normal and abnormal behavior. These views support qualitative
+validation of detection outcomes and help explain why a graph was flagged.
+
+\section{End-to-End Data Flow}
+
+The system begins by capturing raw system events during normal operation and converting these events into time-windowed behavioral graphs. A graph autoencoder is then trained using only normal graphs to learn baseline behavior patterns. The trained model is further refined through a continual learning stage, where streamed graphs and replay memory are used to incrementally adapt the model without forgetting previously learned patterns. After adaptation, baseline statistics are computed to establish anomaly detection thresholds. Incoming graphs are then scored against these thresholds, and alerts are generated whenever anomalous behavior is detected. To evaluate the effectiveness of the system, simulated attacks are injected into the event stream and the resulting detection performance is analyzed. Finally, the system exports logs and visual summaries to support reporting and further analysis.
+
+% Set space between paragraphs to 12 points
+\setlength{\parskip}{12pt}
+% Optional: Set indentation to 0 if you want a modern look
+\setlength{\parindent}{0pt}
+
+\section{SUMMARY}
+
+This chapter presents the system as a modular pipeline that transforms raw
+system activity into intelligent anomaly detection. The architecture separates
+data collection, graph construction, model training, and detection stages,
+allowing each component to be improved independently while maintaining a
+scalable and maintainable design.
+
+The system learns normal behavior using a self-supervised graph autoencoder
+that models interactions between processes, files, and network activities.
+This approach enables the detection of previously unseen zero-day attacks by
+identifying deviations from learned behavioral patterns.
+
+A continual learning module further enhances the system by incrementally
+updating the model as new behavioral graphs arrive, while replay memory
+preserves previously learned patterns. Together with statistical thresholds,
+real-time monitoring, and an attack simulator for evaluation, the architecture
+provides a practical framework for reliable anomaly detection.

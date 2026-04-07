@@ -1,0 +1,24 @@
+# Phase 1: Core Dependencies
+torch>=2.0.0
+torch-geometric>=2.3.0
+networkx>=3.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+scikit-learn>=1.2.0
+pyyaml>=6.0
+
+# Real-time System Monitoring
+psutil>=5.9.0
+watchdog>=3.0.0
+pywin32>=305; sys_platform == 'win32'
+
+# Web Dashboard
+flask>=2.3.0
+
+# Phase 2: Additional (install later)
+# None needed - uses base dependencies
+
+# Phase 3: Additional (install later)
+# fastapi>=0.100.0
+# uvicorn>=0.22.0
+# h5py>=3.8.0

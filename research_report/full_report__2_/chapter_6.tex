@@ -1,0 +1,23 @@
+% CHAPTER 6: CONCLUSION AND FUTURE WORK
+
+% Formatting settings for this chapter
+% \doublespacing
+% \setlength{\parindent}{0.5in}
+% \setlength{\parskip}{6pt}
+% \justifying
+
+\chapter{CONCLUSION AND FUTURE WORK}
+
+\section{CONCLUSION}
+
+This project successfully developed a Self-Supervised Behavioral Graph-Based Zero-Day Attack Detection System integrating graph autoencoders and continual learning to detect previously unseen attacks without labeled attack data. The system converts low-level system events into heterogeneous behavioral graphs and learns robust anomaly detection patterns, achieving 100\% detection rate on zero-day attacks with 0\% false positives on normal behavior.
+
+\vspace{0.2cm}
+
+The real-time detection pipeline integrates dual-mode data collection, hybrid anomaly detection, attack classification, and a web dashboard for visualization and monitoring. Experimental validation through simulated and live attack scenarios confirms the framework's effectiveness across Windows and Linux platforms with practical deployment feasibility. Limitations include dependency on comprehensive event collection and potential brittleness to significantly different system configurations.
+
+\section{FUTURE WORKS}
+
+Immediate enhancements include adversarial robustness mechanisms, optimization of event collection pipeline through sampling strategies, and extension of graph node types to include kernel-level events. Medium-term research encompasses temporal attention mechanisms, Byzantine-robust aggregation for distributed detection, explainable AI components, and transfer learning for cross-system generalization. Long-term vision includes enterprise-scale deployment with SIEM integration, predictive attack detection, automated response mechanisms, and cross-system threat intelligence sharing. This framework demonstrates that practical zero-day detection is achievable through integration of self-supervised learning and graph-based behavior modeling.
+
+\clearpage

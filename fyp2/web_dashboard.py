@@ -1115,13 +1115,6 @@ def status():
     return jsonify({"running": pipeline_running})
 
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     print("\n  ╔══════════════════════════════════════════════════╗")
     print("  ║  Zero-Day Detection — Real-Time Web Dashboard   ║")

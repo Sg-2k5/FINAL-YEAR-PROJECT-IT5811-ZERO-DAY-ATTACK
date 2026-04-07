@@ -98,19 +98,8 @@ class ClamAVScanner:
         if not self.available:
             return AVScanVerdict(status="UNAVAILABLE")
 
-        # Ensure path is absolute
-        if not file_path.is_absolute():
-            file_path = Path.cwd() / file_path
-            
         if not file_path.exists() or not file_path.is_file():
             return AVScanVerdict(status="MISSING")
-
-        # Check if file is readable
-        try:
-            if not os.access(str(file_path), os.R_OK):
-                return AVScanVerdict(status="ERROR", raw_output="File not readable (permission denied)")
-        except OSError as exc:
-            return AVScanVerdict(status="ERROR", raw_output=f"File access check failed: {str(exc)}")
 
         cmd = [self.executable, "--no-summary"]
         if self.database_dir:
@@ -124,25 +113,19 @@ class ClamAVScanner:
                 timeout=self.timeout_seconds,
             )
         except subprocess.TimeoutExpired:
-            return AVScanVerdict(status="ERROR", raw_output="Scan timeout")
+            return AVScanVerdict(status="ERROR", raw_output="timeout")
         except OSError as exc:
-            return AVScanVerdict(status="ERROR", raw_output=f"Scan execution failed: {str(exc)}")
-        except Exception as exc:
-            return AVScanVerdict(status="ERROR", raw_output=f"Unexpected error: {str(exc)}")
+            return AVScanVerdict(status="ERROR", raw_output=str(exc))
 
         out = (proc.stdout or "").strip()
         err = (proc.stderr or "").strip()
         combined = "\n".join([s for s in (out, err) if s])
 
         # Typical output: "C:\path\file: OK" or "...: Signature.Name FOUND"
-        # Handle various output formats
         for line in combined.splitlines():
             if ":" not in line:
                 continue
-            parts = line.split(":", 1)
-            if len(parts) < 2:
-                continue
-            _, remainder = parts
+            _, remainder = line.split(":", 1)
             remainder = remainder.strip()
             if remainder.endswith(" FOUND"):
                 signature = remainder[: -len(" FOUND")].strip()
@@ -150,27 +133,18 @@ class ClamAVScanner:
             if remainder == "OK":
                 return AVScanVerdict(status="CLEAN", raw_output=combined)
 
-        # Fallback to return code interpretation
         if proc.returncode == 0:
             return AVScanVerdict(status="CLEAN", raw_output=combined)
         if proc.returncode == 1:
             return AVScanVerdict(status="INFECTED", raw_output=combined)
-        
-        # For any other return code, treat as error
-        # ClamAV return codes: 0=clean, 1=infected, 2+=error
-        return AVScanVerdict(status="ERROR", raw_output=f"ClamAV returncode: {proc.returncode}. {combined}")
+        return AVScanVerdict(status="ERROR", raw_output=combined)
 
 
 def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scanner: Optional[ClamAVScanner] = None):
-    """Mutates FileImpact records in each report with AV scan verdict fields.
-    
-    Note: Files modified by the attack (encrypted, locked, etc.) are marked as 
-    NOT_APPLICABLE since they may not be scannable. Only CLEAN/unchanged files are scanned.
-    """
+    """Mutates FileImpact records in each report with AV scan verdict fields."""
     scanner = scanner or ClamAVScanner()
 
     cache: Dict[str, AVScanVerdict] = {}
-    sandbox_base = Path(sandbox_path)
 
     for report in reports:
         for impact in report.files_impacted:
@@ -180,24 +154,9 @@ def annotate_attack_reports_with_av(reports: Iterable, sandbox_path: Path, scann
                 impact.av_signature = ""
                 continue
 
-            # Skip AV scanning for files modified by the attack (they may be encrypted/locked)
-            if impact.integrity_status != "UNCHANGED" or impact.affected_by_sha:
-                impact.av_engine = "ClamAV"
-                impact.av_status = "NOT_APPLICABLE"  # File was modified by attack - not scannable
-                impact.av_signature = ""
-                continue
-
             rel = impact.path
             if rel not in cache:
-                # Normalize path separators and construct absolute path
-                try:
-                    # Handle both forward and backward slashes
-                    normalized_rel = Path(rel)
-                    full_path = sandbox_base / normalized_rel
-                    cache[rel] = scanner.scan_file(full_path)
-                except Exception as e:
-                    # If path construction fails, mark as error
-                    cache[rel] = AVScanVerdict(status="ERROR", raw_output=f"Path error: {str(e)}")
+                cache[rel] = scanner.scan_file(Path(sandbox_path) / rel)
 
             verdict = cache[rel]
             impact.av_engine = verdict.engine
@@ -212,13 +171,12 @@ def compute_av_summary(reports: Iterable, scanner: Optional[ClamAVScanner] = Non
     Returns dict with:
     - av_available: bool (scanner is available)
     - engine_version: str (version string or "Unavailable")
-    - total_scanned: int (total files in reports)
+    - total_scanned: int (total files scanned)
     - clean: dict with {'count': int, 'pct': float}
     - infected: dict with {'count': int, 'pct': float, 'files': List[dict]}
     - error: dict with {'count': int, 'pct': float}
     - missing: dict with {'count': int, 'pct': float}
     - unavailable: dict with {'count': int, 'pct': float}
-    - not_applicable: dict with {'count': int, 'pct': float}
     """
     scanner = scanner or ClamAVScanner()
     
@@ -228,22 +186,13 @@ def compute_av_summary(reports: Iterable, scanner: Optional[ClamAVScanner] = Non
         'ERROR': 0,
         'MISSING': 0,
         'UNAVAILABLE': 0,
-        'NOT_APPLICABLE': 0,
     }
     infected_files = []
     
     # Aggregate stats from all impacts
     for report in reports:
         for impact in report.files_impacted:
-            # Normalize status: 'NOT_SCANNED' (default) should be treated as 'UNAVAILABLE'
-            status = impact.av_status
-            if status == 'NOT_SCANNED' or not status:
-                status = 'UNAVAILABLE'
-            
-            # Handle unknown statuses gracefully
-            if status not in counts:
-                status = 'UNAVAILABLE'
-                
+            status = impact.av_status or 'UNAVAILABLE'
             counts[status] = counts.get(status, 0) + 1
             
             if status == 'INFECTED':
@@ -268,7 +217,6 @@ def compute_av_summary(reports: Iterable, scanner: Optional[ClamAVScanner] = Non
         'error': {'count': counts['ERROR'], 'pct': pct(counts['ERROR'])},
         'missing': {'count': counts['MISSING'], 'pct': pct(counts['MISSING'])},
         'unavailable': {'count': counts['UNAVAILABLE'], 'pct': pct(counts['UNAVAILABLE'])},
-        'not_applicable': {'count': counts['NOT_APPLICABLE'], 'pct': pct(counts['NOT_APPLICABLE'])},
     }
     
     return summary

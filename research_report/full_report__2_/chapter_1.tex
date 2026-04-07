@@ -1,0 +1,113 @@
+\chapter{INTRODUCTION}
+\label{ch:Introduction}
+
+\section{BACKGROUND AND MOTIVATION}
+Modern operating systems generate a continuous stream of low-level events such as
+process creation, file access, and network connections. These events capture how a
+system behaves over time and can be used to identify malicious activity. Traditional
+signature-based intrusion detection systems are effective for known threats but are
+unable to recognize new attack patterns. As attack techniques evolve rapidly, there
+is a strong need for zero-day detection methods that do not depend on labeled attack
+data.
+
+Graph-based representations provide an effective way to capture relationships among
+system entities (processes, files, and sockets). In parallel, self-supervised learning
+has emerged as a promising approach for modeling normal behavior without explicit
+labels. This project integrates these directions to build a practical zero-day attack
+detection pipeline that learns from normal activity and flags deviations as anomalies.
+
+\section{CHALLENGES}
+Despite the promise of data-driven security, several challenges arise in real-time
+host-based detection.
+
+\subsection{Lack of Labeled Attack Data}
+Collecting labeled attack traces for every new threat is expensive and often
+impossible. A practical system must operate without attack labels while still
+achieving useful detection performance.
+
+\subsection{Heterogeneous System Behavior}
+System activity involves multiple entity types and interactions. Modeling only
+individual events ignores the structural relationships that distinguish normal
+workflows from attacks.
+
+\subsection{Dynamic and Noisy Environments}
+Normal system behavior varies over time depending on user activity, installed
+software, and background services. This variability introduces noise and increases
+the risk of false positives.
+
+\section{PROBLEM STATEMENT}
+The central problem is to design a host-based detection system that can identify
+zero-day attacks without relying on labeled attack data. The system must capture
+complex behavioral relationships among system entities, learn normal patterns from
+real-time monitoring, and detect anomalous behavior while remaining lightweight
+enough for practical deployment.
+
+\section{PROPOSED SOLUTION}
+This project proposes a self-supervised behavioral graph-based detection system.
+It monitors real system activity, constructs heterogeneous graphs, and trains a
+graph autoencoder to learn normal behavior. During testing, a hybrid anomaly
+detector combines reconstruction error with structural features to detect suspicious
+activity. Simulated attack scenarios are used to evaluate detection performance in
+a controlled environment.
+
+\subsection{Graph-Based Behavioral Modeling}
+Events are converted into graphs with PROCESS, FILE, and SOCKET nodes and edges
+representing interactions such as executes, reads, writes, spawns, and connects.
+This representation captures the context of system activity rather than isolated
+event counts.
+
+\subsection{Self-Supervised Graph Autoencoding}
+A graph autoencoder learns latent representations of normal graphs and attempts to
+reconstruct their structure. Graphs that deviate significantly from learned patterns
+produce high reconstruction errors and are flagged as anomalies.
+
+\subsection{Hybrid Anomaly Scoring}
+Anomaly scores are computed using both reconstruction error and structural
+statistics such as node-type ratios, degree distributions, and edge density. This
+hybrid approach improves robustness compared to using reconstruction error alone.
+
+\section{OBJECTIVES}
+The primary objective of this project is to collect real-time system events for 
+processes, files, and network connections to establish a comprehensive monitoring 
+baseline. Building upon this data, the project aims to construct heterogeneous 
+temporal graphs that capture the intricate behavioral relationships and 
+interactions among various system entities.
+
+A core focus involves training a self-supervised graph autoencoder to learn and 
+model normal system behavior without the necessity for labeled attack data. This 
+model serves as the foundation for detecting anomalies by utilizing a combination 
+of reconstruction errors and structural features to identify deviations from the 
+learned norm.
+
+
+\section{SCOPE OF THE PROJECT}
+This project develops a real-time host monitoring system utilizing behavioral graph construction and self-supervised graph autoencoding for hybrid anomaly detection. The scope includes validating the framework against simulated attack scenarios including reverse shells, privilege escalation,ransomware and data exfiltration and evaluating its efficacy through performance metrics and visual analysis.
+
+
+
+
+
+\section{ORGANIZATION OF THE REPORT}
+The chapters in this report are organized as follows:
+
+\vspace{0.6em}
+CHAPTER 1 INTRODUCTION presents the problem, challenges, and objectives of the
+project.
+
+\vspace{0.6em}
+CHAPTER 2 LITERATURE SURVEY reviews related work in self-supervised anomaly
+detection, graph-based intrusion detection, and continual learning.
+
+\vspace{0.6em}
+CHAPTER 3 SYSTEM DESIGN describes the system architecture and module design of
+the proposed solution.
+
+\vspace{0.6em}
+CHAPTER 4 SYSTEM IMPLEMENTATION describes the algorithms used.
+
+\vspace{0.6em}
+CHAPTER 5 RESULTS AND PERFORMANCE presents the results and the descriptive results of the study, including
+an in-depth analysis of the various performance parameters.
+\newline
+\vspace{0.6em}
+CHAPTER 6 concludes this work and describes the prospective future work in this area.
